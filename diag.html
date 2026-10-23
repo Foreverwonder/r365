@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>方向诊断</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;padding:16px 14px 40px;background:#f6f4ef;color:#2a2622;
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  h1{font-size:20px;margin:0 0 4px;font-weight:700}
+  .sub{font-size:13px;color:#8a8378;margin:0 0 16px;line-height:1.6}
+  .card{background:#fff;border-radius:12px;padding:13px 16px;margin-bottom:10px;
+        box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .k{font-size:12.5px;color:#8a8378;margin-bottom:5px}
+  .v{font-size:16px;font-weight:600;word-break:break-all;line-height:1.5}
+  .note{font-size:13px;font-weight:400;color:#6b6459;margin-top:6px}
+  .big{font-size:46px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .ok{color:#1b7f4f}
+  .no{color:#c0392b}
+  .warn{color:#b8860b}
+  button{width:100%;padding:15px;font-size:16px;font-weight:600;border:0;border-radius:12px;
+         background:#2a2622;color:#fff;margin:4px 0 12px;font-family:inherit}
+  button:disabled{opacity:.35}
+  .verdict{background:#fff8e6;border:1px solid #f0dca8;border-radius:12px;padding:14px 16px;
+           font-size:15px;line-height:1.75;margin-bottom:10px}
+  .verdict b{color:#8a5a00}
+  .log{font:11.5px/1.55 ui-monospace,Menlo,Consolas,monospace;color:#6b6459;white-space:pre-wrap;
+       background:#fff;border-radius:10px;padding:11px 13px;max-height:200px;overflow:auto}
+</style>
+</head>
+<body>
+<h1>方向诊断</h1>
+<p class="sub">这一页只干一件事：看看这台手机、这个浏览器，到底给不给方向数据。两轮都测，测完把那块黄色的结论截图就行。</p>
+
+<div class="card">
+  <div class="k">打开方式</div>
+  <div class="v" id="env">读取中…</div>
+</div>
+
+<div class="card">
+  <div class="k">安全上下文（传感器的前提条件）</div>
+  <div class="v" id="secure">…</div>
+  <div class="note" id="secureNote"></div>
+</div>
+
+<div class="card">
+  <div class="k">方向 API</div>
+  <div class="v" id="api">…</div>
+  <div class="note" id="apiNote"></div>
+</div>
+
+<div class="card">
+  <div class="k">第一轮 · 什么都不点，直接等 3 秒</div>
+  <div class="big" id="c1">0</div>
+  <div class="note">收到的事件数</div>
+  <div class="note" id="a1" style="margin-top:8px">—</div>
+</div>
+
+<button id="btn" disabled>第二轮准备中…</button>
+
+<div class="card">
+  <div class="k">第二轮 · 点过按钮之后 3 秒</div>
+  <div class="big" id="c2">0</div>
+  <div class="note">收到的事件数</div>
+  <div class="note" id="a2" style="margin-top:8px">—</div>
+</div>
+
+<div class="verdict" id="verdict">正在测第一轮，别动，等 3 秒…</div>
+
+<div class="log" id="log"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var lines = [];
+  function log(s) {
+    lines.push(s);
+    if (lines.length > 26) lines.shift();
+    $('log').textContent = lines.join('\n');
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function now() {
+    var d = new Date();
+    return pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+
+  var ua = navigator.userAgent || '';
+  var isWX = /MicroMessenger/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+  var isAndroid = /Android/i.test(ua);
+  var wxVer = (ua.match(/MicroMessenger\/([\d.]+)/) || [])[1] || '';
+  var sysVer = (ua.match(/OS ([\d_]+)/) || [])[1] || (ua.match(/Android ([\d.]+)/) || [])[1] || '';
+
+  $('env').textContent =
+    (isWX ? '微信内置浏览器' + (wxVer ? ' ' + wxVer : '') : '普通浏览器') +
+    ' · ' + (isIOS ? 'iPhone/iPad' : isAndroid ? 'Android' : '其它') +
+    (sysVer ? ' · 系统 ' + sysVer.replace(/_/g, '.') : '');
+
+  var secure = !!window.isSecureContext;
+  $('secure').textContent = secure ? '是' : '否';
+  $('secure').className = 'v ' + (secure ? 'ok' : 'no');
+  $('secureNote').textContent = secure
+    ? '页面走的是 https，浏览器允许读传感器。'
+    : '页面不是 https，浏览器会把传感器静默关掉，不会有任何提示。';
+
+  var hasApi = (typeof DeviceOrientationEvent !== 'undefined');
+  var hasPerm = hasApi && (typeof DeviceOrientationEvent.requestPermission === 'function');
+  $('api').textContent = !hasApi ? '没有这个接口' : hasPerm ? '有接口，且要求授权' : '有接口，不需要授权';
+  $('api').className = 'v ' + (hasApi ? 'ok' : 'no');
+  $('apiNote').textContent = !hasApi
+    ? '连 DeviceOrientationEvent 都没有，读方向这条路在这个浏览器里不存在。'
+    : hasPerm
+      ? '这个环境要求先有一次用户点击，才肯给数据。'
+      : '这个环境不需要授权，挂上监听就该有数据。';
+
+  log(now() + ' 启动');
+  log('  https=' + secure + ' api=' + hasApi + ' needPerm=' + hasPerm);
+  log('  WX=' + isWX + ' iOS=' + isIOS + ' AND=' + isAndroid);
+
+  var cut = {
+    1: { abs: 0, rel: 0, shell: 0, real: 0, last: null, perm: '-' },
+    2: { abs: 0, rel: 0, shell: 0, real: 0, last: null, perm: '-' }
+  };
+  var phase = 1;
+  var listening = false;
+
+  function onOrient(e, tag) {
+    var c = cut[phase];
+    if (tag === 'abs') c.abs++; else c.rel++;
+    var a = e.alpha, b = e.beta, g = e.gamma;
+    var shell = (a === null || a === undefined) && (b === null || b === undefined) && (g === null || g === undefined);
+    if (shell) c.shell++; else c.real++;
+    c.last = { a: a, b: b, g: g, type: e.type, absolute: e.absolute };
+    if (c.real === 1 && !shell) log(now() + ' 收到真值 alpha=' + (a === null ? 'null' : Math.round(a)));
+    paint();
+  }
+
+  function attach() {
+    if (listening) return;
+    listening = true;
+    window.addEventListener('deviceorientationabsolute', function (e) { onOrient(e, 'abs'); }, true);
+    window.addEventListener('deviceorientation', function (e) { onOrient(e, 'rel'); }, true);
+    log(now() + ' 挂上两个监听');
+  }
+
+  function paint() {
+    var c = cut[phase];
+    var total = c.abs + c.rel;
+    $('c' + phase).textContent = total;
+    var el = $('c' + phase);
+    el.className = 'big ' + (c.real > 0 ? 'ok' : total > 0 ? 'warn' : 'no');
+
+    var detail = '绝对 ' + c.abs + ' 条 · 相对 ' + c.rel + ' 条 · 空值(全 null) ' + c.shell + ' 条';
+    if (c.last && c.real > 0) {
+      detail += '\nalpha=' + (c.last.a === null ? 'null' : Math.round(c.last.a * 10) / 10) +
+                ' beta=' + (c.last.b === null ? 'null' : Math.round(c.last.b * 10) / 10) +
+                ' gamma=' + (c.last.g === null ? 'null' : Math.round(c.last.g * 10) / 10);
+    }
+    $('a' + phase).textContent = detail;
+  }
+
+  function verdictFor(c) {
+    var total = c.abs + c.rel;
+    if (c.real > 0) {
+      return '<b>能读到方向。</b>这个浏览器是通的，alpha 当前约 ' + Math.round(c.last.a) + '°，' +
+             '盘在上面应该会跟着转。如果盘没动，那是页面代码的事，不是权限的事。';
+    }
+    if (total > 0 && c.shell === total) {
+      return '<b>浏览器在发事件，但值是空的。</b>事件来了 ' + total + ' 条，alpha/beta/gamma 全是 null —— ' +
+             '这通常说明设备没有磁力计，或者传感器被上层限制住了。盘会一直朝正北。';
+    }
+    if (!secure) {
+      return '<b>不是 https。</b>浏览器把传感器直接关了，一条数据都不会给，也不报错。换成 https 地址再试。';
+    }
+    if (isWX) {
+      return '<b>微信没给数据。</b>页面是 https、接口也在，但 3 秒内一条事件都没来 —— ' +
+             '这是微信内置浏览器这一层截掉的，不是页面能改的。要用指南针，点右上角「…」→「在浏览器打开」。';
+    }
+    return '<b>一条事件都没来。</b>https 没问题、接口也在，但浏览器就是不发数据。' +
+           '常见原因：这台设备没有方向传感器（很多平板和电脑是这样），或者系统把浏览器权限关了。';
+  }
+
+  function rollup(p) {
+    var c = cut[p];
+    log(now() + ' 第' + p + '轮结束：abs=' + c.abs + ' rel=' + c.rel + ' shell=' + c.shell + ' real=' + c.real);
+    if (p === 1) {
+      $('verdict').innerHTML = '第一轮 ' + (c.abs + c.rel) + ' 条。' +
+        (c.real > 0 ? '这个环境是通的，往下点按钮测第二轮即可。' : '再点一下下面的按钮测第二轮 —— 有些浏览器要碰一下才肯给数据。');
+      var b = $('btn');
+      b.disabled = false;
+      b.textContent = '点我开始第二轮';
+    } else {
+      $('verdict').innerHTML = verdictFor(c);
+      var b2 = $('btn');
+      b2.textContent = '再测一遍';
+      b2.disabled = false;
+    }
+  }
+
+  attach();
+
+  setTimeout(function () {
+    rollup(1);
+    phase = 2;
+    paint();
+  }, 3000);
+
+  $('btn').addEventListener('click', function () {
+    var b = $('btn');
+    b.disabled = true;
+    b.textContent = '测试中，别动…';
+    cut[2] = { abs: 0, rel: 0, shell: 0, real: 0, last: null, perm: '-' };
+    phase = 2;
+    paint();
+    $('verdict').textContent = '第二轮测试中，等 3 秒…';
+
+    function go() {
+      attach();
+      log(now() + ' 第二轮开始');
+      setTimeout(function () { rollup(2); }, 3000);
+    }
+
+    if (hasPerm) {
+      try {
+        DeviceOrientationEvent.requestPermission().then(function (r) {
+          cut[2].perm = r;
+          log(now() + ' requestPermission => ' + r);
+          if (r !== 'granted') {
+            $('verdict').innerHTML = '<b>授权被拒了（' + r + '）。</b>' +
+              'iOS 上点了「不允许」就是一直读不到，要去设置里改，或者换 Safari 试。';
+            b.disabled = false;
+            b.textContent = '再测一遍';
+            return;
+          }
+          go();
+        }).catch(function (err) {
+          cut[2].perm = 'error:' + (err && err.message);
+          log(now() + ' requestPermission 抛错 ' + (err && err.message));
+          go();
+        });
+      } catch (err) {
+        log(now() + ' requestPermission 同步抛错 ' + (err && err.message));
+        go();
+      }
+    } else {
+      go();
+    }
+  });
+})();
+</script>
+</body>
+</html>
