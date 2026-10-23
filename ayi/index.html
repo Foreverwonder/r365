@@ -153,30 +153,7 @@ body{padding:0;overflow:hidden}
 .disc svg{height:100%;width:100%;max-width:100%;max-height:100%;display:block}
 .disc .chiprow{position:absolute;left:10px;bottom:8px;top:auto;display:flex;gap:6px}
 .disc .chip{font-size:10px;padding:2px 7px;background:var(--bg2);opacity:.85}
-/* 朝向开关：默认关着，盘按正北朝上摆好；点一下才让外环跟着手机转。
-   为什么不留「自动转」：手机浏览器普遍要求页面先被用户碰一下，才肯发传感器数据，
-   自动模式在真机上只能干等，还会误报「读不到方向」。一个显式按钮同时解决两件事。 */
-.cmbtn{position:absolute;left:11px;top:10px;z-index:6;display:flex;align-items:center;gap:6px;
-       font:inherit;font-size:10.5px;line-height:1.4;padding:5px 10px 5px 8px;border-radius:999px;
-       border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;
-       -webkit-tap-highlight-color:transparent;transition:border-color .18s,color .18s,background .18s}
-.cmbtn[hidden]{display:none}
-.cmbtn i{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex:0 0 auto;
-         transition:background .18s,box-shadow .18s}
-.cmbtn[data-st="wait"] i{animation:cmblink .9s ease-in-out infinite}
-.cmbtn[data-st="on"]{border-color:var(--bd2);color:var(--tx)}
-.cmbtn[data-st="on"] i{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%,transparent)}
-.cmbtn[data-st="fail"]{color:var(--bad);border-color:var(--bad)}
-.cmbtn[data-st="fail"] i{background:var(--bad)}
-/* 一次性提示条：只在「读不到方向」时露一句，说完自己收。
-   绝对定位 + pointer-events:none，不占布局、不挡点击。 */
-.cmtip{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:6;
-       max-width:calc(100% - 26px);padding:5px 11px;border-radius:999px;
-       border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);
-       font-size:10.5px;line-height:1.5;white-space:nowrap;overflow:hidden;
-       text-overflow:ellipsis;pointer-events:none;
-       opacity:0;transition:opacity .32s ease}
-.cmtip[data-show="1"]{opacity:1}
+
 
 /* 外环可拖：手动对北，任何浏览器、任何协议都能用。
    ★ touch-action 必须写在 <svg> 上，不能只写在 <g id="dirrot"> 上 ——
@@ -187,7 +164,6 @@ body{padding:0;overflow:hidden}
 .disc svg{touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
 .disc[data-drag="1"] svg{cursor:grabbing}
 
-@keyframes cmblink{0%,100%{opacity:1}50%{opacity:.28}}
 .det{padding:13px 16px 14px;overflow:auto;scrollbar-width:none;display:flex;flex-direction:column;
      --dfs:12.5px}
 /* 详情面板是 flex 列：子块一律不许被压缩，装不下就走滚动条 + 「展开全文」，
@@ -370,9 +346,7 @@ body{overflow:auto}
   </header>
   <main class="main">
     <section class="card disc">
-      <!-- 朝向开关：只有手机端、且浏览器支持方向事件时才由 JS 露出来。
-           默认是关的，点了才接管外环；电脑端永远 hidden，一行都不碰。 -->
-      <button id="cmbtn" class="cmbtn" type="button" hidden><i></i><span id="cmtxt">指南针</span></button>
+
       <svg viewBox="0 0 900 900" role="img" xmlns="http://www.w3.org/2000/svg" data-page-node-id="kaba1ZeZCCqLXOsnWXS878">
         <title id="svgtitle"></title>
         <desc id="svgdesc" data-page-node-id="S2V2ss9qY5vqqCbSSIIyXQ">双环合盘：外环是八个方位，内环是十二时辰，共用同一个圆心；悬浮或点击某一格，只点亮这一格、其余压暗，右侧给出适宜与不适宜做什么。圆心为本日四柱与四派立场。</desc>
@@ -876,27 +850,23 @@ function renderNowMark(){
 /* ============================================================
    方位盘跟随手机朝向（只对手机端生效，电脑端连按钮都不出现）
    ------------------------------------------------------------
-   默认是「关」：盘正北朝上摆着，一动不动 —— 跟没这功能时一样。
-   点一下按钮才接管：屏幕转到哪，外环的「西北」就转到哪，
+   默认自动接管：屏幕转到哪，外环的「西北」就转到哪，
    让盘上的方位真的对上脚底下的方向。
 
-   为什么不再做「打开就自动转」：手机浏览器（安卓 Chrome、小米自带浏览器、
-   iOS Safari）普遍要求页面先被用户碰一下才肯发传感器数据。自动模式在真机上
-   只能干等三秒，然后误报一句「读不到方向」——用户看到的就是「一进去就说读不到，
-   点一下才转」。一个显式按钮同时解决两件事：给出交互、把开关权交回用户。
+   v2.9 起没有开关、也没有任何失败提示（用户要的是「假装没发生过」）：
+   手机浏览器普遍要求页面先被碰一下才肯发传感器数据，所以实际体感正是
+   「点一下屏幕就转起来了」。接管不了的设备（电脑、没磁力计、微信内置浏览器）
+   就一直朝正北，屏上不留一个字、一个按钮，看起来跟没有这个功能完全一样。
 
    内环十二时辰完全不参与：它讲的是「几点」，是时间的绝对刻度，
    跟手机朝哪边毫无关系。这个盘上只有外环这一组会转。
    ============================================================ */
 var CM = window.CM = (function(){
   var g   = document.getElementById('dirrot');
-  var btn = document.getElementById('cmbtn');
-  var txt = document.getElementById('cmtxt');
   if(!g) return null;
 
   var S = {
-    on:false,        // 用户按下开关没有 —— 关着的时候传感器事件一律不理
-    st:"off",        // off | wait | on | fail，只影响按钮长什么样
+    on:true,         // 默认就接管；没有开关，也不告诉用户
     live:false,      // 收到过有效朝向
     rot:0,           // 当前渲染角度（可累积超过 360，视觉等价）
     target:0,        // 目标角度
@@ -909,17 +879,7 @@ var CM = window.CM = (function(){
     waitT:0
   };
 
-  var TXT = { off:"指南针", wait:"开启中…", on:"罗盘 · 开", fail:"读不到方向" };
 
-  /* 按钮只有四张脸，全都由这一个函数改，省得文案和灯色对不上 */
-  function setSt(st){
-    S.st = st;
-    if(!btn || !txt) return;
-    btn.dataset.st = st;
-    txt.textContent = TXT[st];
-    /* 读不到方向不是终点 —— 告诉用户还有一条路，否则他只会觉得这功能坏了 */
-    if(st === "fail") tip("读不到方向 · 可用手指转动外环", 4600);
-  }
 
   /* 上一次选的是哪根轴，给迟滞用（跨帧记住，避免 45° 附近来回切） */
   var lastUseTop = true;
@@ -1041,8 +1001,6 @@ var CM = window.CM = (function(){
 
     if(!S.live){
       S.live = true;
-      clearTimeout(S.waitT);
-      setSt("on");
       run();
     }
     S.sig = sig;
@@ -1068,53 +1026,36 @@ var CM = window.CM = (function(){
            (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS 13+ 伪装成 Mac
   }
 
-  function start(){
-    /* 不写 if(S.on) return —— 上次失败时 on 还挂着 true，
-       重试会被自己挡住。状态全在这里重置。 */
+  /* v2.9：没有开关，也没有失败提示。进来就尝试接管；
+     浏览器要手势的话，用户碰一下屏数据自然就来了 —— 正好是他说的「点一下空白处就转」。
+     接管不了（电脑、没磁力计、微信内置浏览器）就一直朝正北，屏上不留任何痕迹。 */
+  function autoStart(){
     S.on = true;
     S.live = false;
-    setSt("wait");
 
-    function go(){
-      attach();
-      /* 点了还没数据：这台设备没磁力计，或者浏览器把传感器关了。
-         最多等 2.5 秒就给个准话，别让它一直转圈。 */
-      clearTimeout(S.waitT);
-      S.waitT = setTimeout(function(){
-        if(S.on && !S.live) setSt("fail");
-      }, 2500);
-    }
+    function go(){ attach(); }
 
     var ua = navigator.userAgent || "";
     if(isIOS(ua) && typeof DeviceOrientationEvent.requestPermission === "function"){
-      try{
-        DeviceOrientationEvent.requestPermission().then(function(r){
-          if(r === "granted") go();
-          else { S.on = false; setSt("fail"); }
-        }).catch(function(){ S.on = false; setSt("fail"); });
-      }catch(err){ S.on = false; setSt("fail"); }
+      /* iOS 只能在用户手势里要权限。绑一次就拆，成了不弹任何东西；
+         拒绝、或者设备本来就没磁力计，也当无事发生。 */
+      var once = function(){
+        document.removeEventListener("pointerdown", once, true);
+        document.removeEventListener("click", once, true);
+        try{
+          DeviceOrientationEvent.requestPermission().then(function(r){
+            if(r === "granted") go();
+          }).catch(function(){});
+        }catch(err){}
+      };
+      document.addEventListener("pointerdown", once, true);
+      document.addEventListener("click", once, true);
     } else {
       go();
     }
   }
 
-  function stop(){
-    S.on = false;
-    S.live = false;
-    clearTimeout(S.waitT);
-    S.target = 0;        // 交还方向盘：平滑转回正北朝上
-    setSt("off");
-    run();
-  }
 
-  if(btn){
-    btn.addEventListener("click", function(){
-      /* 关着 / 上次失败 → 开（失败后再点就是重试）；
-         正在连 / 已经开着 → 关。按钮上永远只写「现在是什么状态」。 */
-      if(S.st === "off" || S.st === "fail") start();
-      else stop();
-    });
-  }
 
   /* ============================================================
      手指拖动外环 —— 不依赖任何传感器的保底通路
@@ -1161,7 +1102,7 @@ var CM = window.CM = (function(){
     if(!geo) return;
     var p = polarAt(e.clientX, e.clientY, geo);
     if(p.r < 296 || p.r > 452) return;        // 只有外环那一圈
-    if(S.st === "wait" || S.st === "on") return;   // 传感器正在接管，别抢
+    if(S.live) return;                             // 传感器已经在接管，别抢
 
     DRAG.on = true; DRAG.id = e.pointerId; DRAG.geo = geo;
     DRAG.lastA = p.a;          /* 只记「上一次的角度」，不记绝对起点 */
@@ -1170,8 +1111,6 @@ var CM = window.CM = (function(){
     DRAG.moved = 0;
     window.__dragging = true;  /* 让 hover 处理器闭嘴，别再换详情、别顶高抽屉 */
 
-    /* 上次读不到方向、用户改用手指了 —— 按钮退回中性态，别一直红着 */
-    if(S.st === "fail") setSt("off");
 
     try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
     var host = document.querySelector(".disc");
@@ -1229,13 +1168,12 @@ var CM = window.CM = (function(){
   })();
 
 
-  /* 只有手机才露按钮。电脑（含触屏本）UA 不命中，一行都不碰，跟以前完全一样。 */
+  /* 只认手机。电脑（含触屏本）UA 不命中，一行都不碰，跟以前完全一样。 */
   (function boot(){
     var ua = navigator.userAgent || "";
     var phone = /Android|iPhone|iPod|HarmonyOS|Mobile\/|MiuiBrowser/i.test(ua) || isIOS(ua);
-    if(!phone || !("DeviceOrientationEvent" in window) || !btn) return;
-    btn.hidden = false;
-    setSt("off");
+    if(!phone || !("DeviceOrientationEvent" in window)) return;
+    autoStart();
   })();
 
   return {
