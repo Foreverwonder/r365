@@ -488,8 +488,8 @@ function prefetchNear(d){
 }
 try{
   var _t0 = performance.now();
-  var _ro = await fetch(DATA_BASE + "_order.json", { cache: "force-cache" });
-  if(!_ro.ok) throw new Error(_ro.status + " _order.json");
+  var _ro = await fetch(DATA_BASE + "order.json", { cache: "force-cache" });
+  if(!_ro.ok) throw new Error(_ro.status + " order.json");
   DAY_ORDER = await _ro.json();
   DAYS = Object.create(null);
   __perf.orderMs = Math.round(performance.now() - _t0);
