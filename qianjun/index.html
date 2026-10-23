@@ -1,0 +1,2158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>每日算卦 · 双环合盘（外环方位 ＋ 内环时辰）</title>
+<style>
+:root{
+  --bg:#ffffff; --bg2:#f6f5f1; --bg3:#fbfaf7;
+  --tx:#1a1a1a; --tx2:#6b6b68; --tx3:#9a9a96;
+  --bd:rgba(0,0,0,.12); --bd2:rgba(0,0,0,.22);
+  --ok:#5A6A22; --okbg:#F1F3E3;
+  --good:#1F6350; --goodbg:#E7F1ED;
+  --warn:#86591F; --warnbg:#F8F1E1;
+  --bad:#8E362E; --badbg:#F9EBE8;
+  --gray:#5A5E56; --graybg:#F2F2EC;
+  --halo:#BE8F35;
+  --radius:14px;
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#1c1c1b; --bg2:#272725; --bg3:#232322;
+    --tx:#ececea; --tx2:#a8a8a4; --tx3:#7d7d79;
+    --bd:rgba(255,255,255,.14); --bd2:rgba(255,255,255,.24);
+    --okbg:#2a2e1c; --goodbg:#16302a; --warnbg:#332a16; --badbg:#331c19; --graybg:#262624;
+    --ok:#A9BD72; --good:#63C0A8; --warn:#D9A85E; --bad:#D4837A; --gray:#A9ABA3;
+    --halo:#D8B368;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;padding:26px 20px 44px;background:var(--bg);color:var(--tx);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto}
+h1{font-size:18px;font-weight:500;margin:0 0 6px;letter-spacing:.2px}
+.sub{font-size:13px;line-height:1.75;color:var(--tx2);margin:0 0 20px}
+.sub b{font-weight:500;color:var(--tx)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 404px;gap:22px;align-items:start}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}}
+.card{background:var(--bg3);border:.5px solid var(--bd);border-radius:var(--radius)}
+
+/* ---------- 圆盘区 ---------- */
+.compass{padding:48px 12px 6px;position:relative}
+.compass svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--sans)}
+.chiprow{position:absolute;left:16px;top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:11.5px;line-height:1.4;padding:3px 10px;border-radius:999px;border:.5px solid var(--bd);color:var(--tx2);background:var(--bg2)}
+.chip b{font-weight:500;color:var(--tx)}
+
+.sector{cursor:pointer;transition:fill-opacity .16s ease,stroke-width .16s ease}
+.sector:hover{stroke-width:2}
+.sector.active{stroke-width:2.4;fill-opacity:.34}
+.sector.dim{fill-opacity:.03}
+.acc{transition:opacity .16s ease;pointer-events:none}
+.acc.active{opacity:1}
+.acc.dim{opacity:.22}
+.lb{transition:opacity .16s ease;cursor:pointer}
+.lb.dim{opacity:.26}
+.hublink{cursor:pointer}
+.hint{font-size:12px;color:var(--tx3);text-align:center;padding:4px 12px 12px;line-height:1.7}
+
+/* ---------- 右侧面板 ---------- */
+aside{position:sticky;top:20px;padding:18px 20px 20px;min-height:460px;max-height:calc(100vh - 40px);overflow:auto}
+.pname{font-size:19px;font-weight:500;margin:0 0 2px}
+.pmeta{font-size:12px;color:var(--tx2);margin:0 0 8px;line-height:1.6}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;margin-bottom:10px}
+.verdict{font-size:13.5px;line-height:1.74;margin:0 0 16px;color:var(--tx)}
+.sec{margin-bottom:14px}
+.sec h3{font-size:12.5px;font-weight:500;margin:0 0 6px;color:var(--tx2);letter-spacing:.3px}
+ul{margin:0;padding:0;list-style:none}
+li{font-size:13px;line-height:1.62;padding-left:14px;position:relative;margin-bottom:3px;color:var(--tx)}
+li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:1px}
+li.g::before{background:var(--good)}
+li.b::before{background:var(--bad)}
+li.n::before{background:var(--tx3)}
+.evi{font-size:12px;line-height:1.7;color:var(--tx2);background:var(--bg2);border-radius:8px;padding:9px 11px}
+.evi div{margin-bottom:2px}
+.evi div:last-child{margin:0}
+.pair{font-size:12.5px;line-height:1.7;background:var(--bg2);border-radius:8px;padding:9px 11px;color:var(--tx2)}
+.pair div{margin-bottom:3px}
+.pair div:last-child{margin:0}
+.pair b{font-weight:500;color:var(--tx)}
+
+/* ---------- 四派各自结论（允许互相矛盾，不合并） ---------- */
+.vw-wrap{background:var(--bg2);border-radius:8px;padding:8px 10px}
+.vw{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:start;
+    font-size:12.2px;line-height:1.62;padding:3px 0;border-bottom:.5px dashed var(--bd)}
+.vw:last-of-type{border-bottom:0}
+.vw .s{font-weight:500;white-space:nowrap;border-radius:5px;padding:0 6px;font-size:11.6px;
+       color:#fff;background:var(--tx3);line-height:1.7}
+.vw .t{color:var(--tx)}
+.vw[data-st="吉"] .s{background:var(--good)}
+.vw[data-st="凶"] .s{background:var(--bad)}
+.vw[data-st="中"] .s{background:var(--gray);color:var(--tx)}
+.vw[data-st="存疑"] .s{background:var(--warn)}
+.vw[data-st="吉"] .t{color:var(--good)}
+.vw[data-st="凶"] .t{color:var(--bad)}
+.vw-split{margin-top:6px;padding:6px 9px;border-left:2.5px solid var(--warn);border-radius:0 6px 6px 0;
+          background:var(--warnbg);font-size:12.2px;line-height:1.65;color:var(--tx)}
+.vw-split b{font-weight:500}
+.vw-merge{margin-top:6px;padding:6px 9px;border-left:2.5px solid var(--bd2);border-radius:0 6px 6px 0;
+          background:var(--bg2);font-size:12.2px;line-height:1.65;color:var(--tx2)}
+.vw-merge b{font-weight:500;color:var(--tx)}
+.views-block{margin:0 0 12px}
+.views-block h3{font-size:12.5px;font-weight:500;margin:0 0 6px;color:var(--tx2);letter-spacing:.3px}
+.det .views-block{margin:0 0 9px}
+.det .views-block h3{font-size:calc(var(--dfs) * 0.9);margin:0 0 4px;color:var(--tx3);letter-spacing:.4px}
+.det .views-block .vw{font-size:calc(var(--dfs) * 0.95);line-height:1.56}
+.det .views-block .vw .s{font-size:calc(var(--dfs) * 0.87)}
+.det .views-block .vw-split,
+.det .views-block .vw-merge{font-size:calc(var(--dfs) * 0.95);line-height:1.56}
+@media (max-width:640px){ .vw{grid-template-columns:1fr} .vw .s{justify-self:start} }
+
+/* ---------- 底部带 ---------- */
+.tl{margin-top:22px}
+.tl h2{font-size:14px;font-weight:500;margin:0 0 10px}
+.tlgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+@media (max-width:1080px){.tlgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.tlgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tlcard{border:.5px solid var(--bd);border-radius:10px;padding:10px 11px;cursor:pointer;background:var(--bg3);transition:border-color .14s,transform .14s,background .14s}
+.tlcard:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.tlcard.active{border-color:var(--bd2);border-width:1.5px;background:var(--bg2)}
+.tltime{font-size:13px;font-weight:500;margin-bottom:2px}
+.tlword{font-size:12px;font-weight:500;margin-bottom:5px;line-height:1.45}
+.tlnote{font-size:11.5px;line-height:1.55;color:var(--tx2)}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--tx2);margin-top:20px}
+.legend span{display:flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+footer{font-size:12px;color:var(--tx3);margin-top:22px;line-height:1.75}
+
+
+/* ===== P1 一屏控制台 ===== */
+html,body{height:100%}
+body{padding:0;overflow:hidden}
+.app{height:100vh;height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;
+     gap:9px;padding:11px 14px 8px;max-width:1560px;margin:0 auto}
+/* 顶栏 */
+.hd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;min-height:34px}
+.hd-date{font-size:15px;font-weight:500;letter-spacing:.2px}
+.hd-date b{font-weight:600}
+.hd-meta{flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--tx2)}
+.hd-meta .k{font-style:normal;font-size:10.5px;color:var(--tx3);border:.5px solid var(--bd);
+            border-radius:5px;padding:1px 5px;margin-left:8px}
+.hd-meta .k:first-child{margin-left:0}
+.hd-meta em{font-style:normal;color:var(--tx3);margin:0 2px}
+.hd-note{font-size:12px;text-align:right;line-height:1.5;white-space:nowrap}
+.hd-note b{font-weight:500;color:var(--tx)}
+.hd-note .sep{color:var(--tx3);margin:0 6px}
+/* 主区 */
+.main{display:grid;grid-template-columns:minmax(320px,.95fr) minmax(0,1.05fr);gap:12px;min-height:0}
+.card{background:var(--bg3);border:.5px solid var(--bd);border-radius:12px}
+.disc{display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px;position:relative}
+.disc svg{height:100%;width:100%;max-width:100%;max-height:100%;display:block}
+.disc .chiprow{position:absolute;left:10px;bottom:8px;top:auto;display:flex;gap:6px}
+.disc .chip{font-size:10px;padding:2px 7px;background:var(--bg2);opacity:.85}
+/* 朝向开关：默认关着，盘按正北朝上摆好；点一下才让外环跟着手机转。
+   为什么不留「自动转」：手机浏览器普遍要求页面先被用户碰一下，才肯发传感器数据，
+   自动模式在真机上只能干等，还会误报「读不到方向」。一个显式按钮同时解决两件事。 */
+.cmbtn{position:absolute;left:11px;top:10px;z-index:6;display:flex;align-items:center;gap:6px;
+       font:inherit;font-size:10.5px;line-height:1.4;padding:5px 10px 5px 8px;border-radius:999px;
+       border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);cursor:pointer;
+       -webkit-tap-highlight-color:transparent;transition:border-color .18s,color .18s,background .18s}
+.cmbtn[hidden]{display:none}
+.cmbtn i{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex:0 0 auto;
+         transition:background .18s,box-shadow .18s}
+.cmbtn[data-st="wait"] i{animation:cmblink .9s ease-in-out infinite}
+.cmbtn[data-st="on"]{border-color:var(--bd2);color:var(--tx)}
+.cmbtn[data-st="on"] i{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%,transparent)}
+.cmbtn[data-st="fail"]{color:var(--bad);border-color:var(--bad)}
+.cmbtn[data-st="fail"] i{background:var(--bad)}
+/* 一次性提示条：只在「读不到方向」时露一句，说完自己收。
+   绝对定位 + pointer-events:none，不占布局、不挡点击。 */
+.cmtip{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:6;
+       max-width:calc(100% - 26px);padding:5px 11px;border-radius:999px;
+       border:.5px solid var(--bd);background:var(--bg2);color:var(--tx2);
+       font-size:10.5px;line-height:1.5;white-space:nowrap;overflow:hidden;
+       text-overflow:ellipsis;pointer-events:none;
+       opacity:0;transition:opacity .32s ease}
+.cmtip[data-show="1"]{opacity:1}
+
+/* 外环可拖：手动对北，任何浏览器、任何协议都能用。
+   ★ touch-action 必须写在 <svg> 上，不能只写在 <g id="dirrot"> 上 ——
+   Chrome 对 SVG 子元素的 touch-action 支持不可靠，实测手指一动就被判成
+   页面滚动、派发 pointercancel，拖动只走第一步就断（拖 90° 只转 11.25°）。
+   代价是盘这块区域不能用来滚页面；盘本身是交互区，在盘上滑动 = 转盘，
+   符合罗盘的直觉，滚页面到盘外面滑。 */
+.disc svg{touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.disc[data-drag="1"] svg{cursor:grabbing}
+
+@keyframes cmblink{0%,100%{opacity:1}50%{opacity:.28}}
+.det{padding:13px 16px 14px;overflow:auto;scrollbar-width:none;display:flex;flex-direction:column;
+     --dfs:12.5px}
+/* 详情面板是 flex 列：子块一律不许被压缩，装不下就走滚动条 + 「展开全文」，
+   否则内容一多，判语会被 flex 挤成 0 高（看起来像凭空消失）。 */
+.det > *{flex:0 0 auto}
+.det::-webkit-scrollbar{width:0;height:0;display:none}
+.det::-webkit-scrollbar-thumb{background:var(--bd);border-radius:4px}
+.det::-webkit-scrollbar-track{background:transparent}
+/* 详情内部：所有字号跟着 --dfs 走，--dfs 由 JS 二分自适应，保证一屏装下 */
+.dhead{display:flex;align-items:baseline;gap:10px;margin:0 0 3px}
+.pname{font-size:calc(var(--dfs) * 1.36);font-weight:500;margin:0;flex:1;line-height:1.25}
+.dhead .tag{margin:0;font-size:calc(var(--dfs) * 1.0)}
+.pmeta{font-size:calc(var(--dfs) * 0.92);margin:0 0 7px;line-height:1.5}
+.verdict{font-size:calc(var(--dfs) * 1.05);line-height:1.68;margin:0 0 10px}
+#vd.clamp{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.det.full #vd{display:block;-webkit-line-clamp:unset;overflow:visible}
+.more{align-self:flex-start;margin:-6px 0 8px;padding:2px 9px;font:inherit;
+      font-size:calc(var(--dfs) * 0.84);color:var(--tx2);background:var(--bg2);
+      border:.5px solid var(--bd);border-radius:999px;cursor:pointer}
+.more:hover{border-color:var(--bd2);color:var(--tx)}
+.more[hidden]{display:none}
+.dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 16px;align-content:start}
+.dgrid .sec{margin:0}
+.dgrid .sec.evi-block{grid-column:1/-1;margin-top:3px}
+.dgrid .sec.fill2{grid-column:span 2}
+.dgrid .sec.fill3{grid-column:1/-1}
+.dgrid h3{font-size:calc(var(--dfs) * 0.9);margin:0 0 3px;color:var(--tx3);letter-spacing:.4px}
+.dgrid li{font-size:calc(var(--dfs) * 0.97);line-height:1.58;margin-bottom:1px;padding-left:12px}
+.dgrid li::before{top:7px;width:4px;height:4px}
+.dgrid .one{font-size:calc(var(--dfs) * 0.97);line-height:1.6;color:var(--tx)}
+.dgrid .one.warn{color:var(--bad)}
+.dgrid .evi-block .evi{font-size:calc(var(--dfs) * 0.9);line-height:1.6;padding:7px 9px;display:grid;
+            grid-template-columns:repeat(3,minmax(0,1fr));gap:0 16px}
+.extra{margin-top:6px;font-size:11.5px}
+.extra .sec{margin:0}
+.extra h3{font-size:11px;margin:0 0 3px;color:var(--tx3)}
+.extra .pair{font-size:11.5px;padding:6px 9px;display:flex;gap:14px;flex-wrap:wrap}
+.extra ul{display:flex;gap:12px;flex-wrap:wrap}
+.extra li{font-size:12px;margin:0}
+/* 底部带 */
+.tl{margin:0}
+.tl h2{font-size:11px;font-weight:500;color:var(--tx3);margin:0 0 5px;letter-spacing:.3px}
+.tlgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.tlcard{padding:7px 9px;border-radius:9px}
+.tltime{font-size:12px;margin-bottom:1px}
+.tlword{font-size:11px;margin-bottom:3px}
+.tlnote{font-size:10.5px;line-height:1.45;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.status{display:flex;align-items:center;gap:14px;font-size:10.5px;color:var(--tx3);line-height:1.5}
+.status .legend{margin:0;gap:11px;font-size:10.5px}
+.status .dot{width:8px;height:8px;border-radius:2px}
+.status .foot{flex:1;text-align:right}
+/* 手机：圆盘上、详情做底部抽屉（两档高度） */
+.sheet{display:none}
+.grab{display:none}
+  .sheethead,.sheetclose{display:none}
+@media (max-width:860px){
+  .app{display:block;height:auto;min-height:0;gap:0;
+       padding:6px 8px calc(34vh + 44px);padding:6px 8px calc(34dvh + 44px)}
+  .hd{gap:6px;min-height:0}
+  .hd-date{font-size:13px}
+  .hd-meta{font-size:10.5px;gap:4px}
+  .hd-meta .k{margin-left:6px}
+  .hd-note{display:none}
+  .hd-meta{display:none}   /* 窄屏顶栏只留日期，卦名在圆心 */
+  .main{display:block;grid-template-columns:none;gap:0}
+  .disc{border:0;background:transparent;padding:0;overflow:visible}
+  .disc svg{width:100%;height:auto;max-width:100%}
+  .tl{margin-top:10px}
+  .det{position:fixed;left:0;right:0;bottom:0;height:30vh;height:30dvh;overscroll-behavior:contain;border-radius:16px 16px 0 0;
+       border-bottom:0;box-shadow:0 -8px 34px rgba(0,0,0,.18);padding:0 14px 16px;z-index:20;
+       transition:height .22s ease}
+  .det.tall{height:42vh;height:42dvh}
+  .det.expanded{height:92vh;height:92dvh;max-height:calc(100vh - var(--barh,112px) - 52px);max-height:calc(100dvh - var(--barh,112px) - 52px)}
+  .grab{display:block;position:absolute;left:50%;top:5px;width:38px;height:4px;border-radius:3px;
+        background:var(--bd2);transform:translateX(-50%);cursor:pointer}
+  .grab::after{content:"";position:absolute;inset:-11px -22px}
+  .sheethead{display:block;position:sticky;top:0;z-index:6;height:40px;margin:0 -14px 2px;border-radius:16px 16px 0 0;background:var(--bg3)}
+  .sheethead .grab{display:block;position:absolute;left:50%;top:12px;width:48px;height:5px;background:var(--tx3,#8a8a86)}
+  .sheetclose{display:block;position:absolute;right:14px;top:6px;height:28px;padding:0 12px;border-radius:14px;border:.5px solid var(--bd2);background:transparent;color:var(--tx2);font:inherit;font-size:12.5px;line-height:1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sheetclose:active{background:var(--bg2)}
+  .dgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}
+  .dgrid .evi-block .evi{grid-template-columns:1fr;gap:2px}
+  .dgrid .sec.fill2,.dgrid .sec.fill3{grid-column:1/-1}
+  .tl{padding-bottom:2px}
+  .tl h2{display:none}
+  .tlgrid{grid-auto-flow:column;grid-auto-columns:46%;grid-template-columns:none;
+          overflow-x:auto;scroll-snap-type:x proximity;gap:7px;scrollbar-width:none}
+  .tlgrid::-webkit-scrollbar{display:none}
+  .tlcard{scroll-snap-align:start}
+  .tlcard{padding:6px 8px}
+  .tlnote{-webkit-line-clamp:2}
+  .status{display:none}
+}
+@media (min-width:861px){ .det{--dfs:12.5px} }
+@media (min-width:861px){ .det{--dfs:12.5px} }
+:root{--tint-01:#b4bca5;--tint-02:#b1b4aa;--tint-03:#b2b0a6;--tint-04:#b6b6af;--tint-05:#b7b2a6;--tint-06:#b5b7a6;--tint-07:#b6b5a7;--tint-08:#b2b2a0;--tint-09:#b7b7a6;--tint-10:#bfb6ae;--tint-11:#b6b4a6;--tint-12:#b5b7a2}/* 右上角的小问号 + 说明浮层（构建期注入） */
+#help{position:fixed;top:100px;right:8px;z-index:9000;width:24px;height:24px;border-radius:50%;border:1px solid var(--bd2);background:var(--bg);color:var(--tx3);font-size:13px;line-height:1;font-family:inherit;cursor:pointer;padding:0;opacity:.7;-webkit-tap-highlight-color:transparent}
+#help:active{opacity:1;background:var(--bg2)}
+#helpbox{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.22);padding:26px}
+#helpbox[hidden]{display:none}
+#helpbox .hb{background:var(--bg);border:1px solid var(--bd);border-radius:14px;padding:22px 20px;max-width:20em;text-align:center}
+#helpbox .hbt{font-size:15px;font-weight:500;color:var(--tx);margin-bottom:14px}
+#helpbox .hbl{font-size:13px;line-height:1.95;color:var(--tx2)}
+#helpbox .hbl span{display:block}
+#helpbox .hbb{margin-top:18px;font-size:13px;color:var(--tx);border:1px solid var(--bd2);border-radius:999px;padding:8px 26px;background:transparent;cursor:pointer;font-family:inherit}
+html,body{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0;display:none}
+/*vh-fallback*/</style>
+<style>
+/* ── 布局：把「视口高度 − 日期栏高度」交给浏览器的布局引擎，不用 JS 量、也不用算术 ──
+   模板原本是 body{overflow:hidden} + .app{height:100dvh}，即「让 .app 独占整个视口」。
+   日期栏插进来以后，这个假设就不成立了 —— 页面底部会被 overflow:hidden 直接切掉。
+
+   曾经的错误解法：用 JS 量出日期栏高度，写进 --barh，再 .app{height:calc(100dvh - var(--barh))}。
+   那是一边让引擎算、一边自己再手算一遍。字体加载完、浏览器缩放、系统字体放大、
+   日期栏文字换行……每一样都会让那个数字失效，永远追不完。
+
+   正确解法：让 body 自己当弹性列，.app 作为弹性项自动吃掉剩下的高度。
+   父容器 flex:none，弹性项 flex:1 1 auto —— 高度由引擎分，任何屏幕/缩放/字体都对，
+   而且没有任何需要维护的数字。 */
+html{height:100%}
+body{display:flex;flex-direction:column;height:100%;overflow:auto;padding:0}
+#daybar{flex:none}
+.app{flex:1 1 auto;height:auto;min-height:0}
+/* 极矮屏兜底：弹性项已经缩到底还装不下时，让内容自然撑开、页面滚动。
+   宁可滚动，也不硬切 —— 底部择时表和页脚那行民俗声明必须看得见。 */
+body{overflow:auto}
+#daybar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 16px;margin:0;background:var(--bg2,#fff);
+  border-bottom:0.5px solid var(--bd,#e6e6e6);
+  font-family:var(--font-sans,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif);
+  font-size:13px;position:relative;z-index:50}
+#daybar button{font:inherit;font-size:13px;padding:5px 12px;border-radius:8px;
+  border:0.5px solid var(--bd2,#ddd);background:transparent;color:var(--tx,#111);cursor:pointer}
+#daybar button:hover{border-color:var(--tx3,#999)}
+#daybar button:disabled{opacity:.35;cursor:default}
+#dbDate{font-weight:500;font-size:14px;min-width:14em}
+#dbPick{font:inherit;font-size:13px;padding:4px 8px;border-radius:8px;
+  border:0.5px solid var(--bd2,#ddd);background:transparent;color:var(--tx,#111)}
+#dbHint{color:var(--tx3,#888);font-size:12px;margin-left:auto}
+#dcalWrap{position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;display:none;
+  background:rgba(0,0,0,.3);-webkit-tap-highlight-color:transparent}
+#dcalWrap.on{display:flex;align-items:center;justify-content:center;padding:16px}
+#dcal{background:var(--card,#fff);color:var(--tx,#1f1e1c);border-radius:16px;padding:14px 14px 10px;
+  width:340px;max-width:92vw;max-height:82vh;overflow:auto;box-shadow:0 14px 44px rgba(0,0,0,.3)}
+#dcal .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#dcal .hd b{font-size:15px;font-weight:600}
+#dcal .hd button{font:inherit;font-size:18px;line-height:1;padding:3px 12px;border:0.5px solid var(--bd2,#ddd);
+  background:transparent;border-radius:8px;color:inherit;cursor:pointer}
+#dcal .hd button:disabled{opacity:.25;cursor:default}
+#dcal .wd,#dcal .gr{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+#dcal .wd span{font-size:11px;color:var(--tx3,#8a8983);text-align:center;padding:2px 0}
+#dcal .gr button{font:inherit;font-size:13px;padding:7px 0;border:0;background:transparent;
+  border-radius:9px;color:inherit;cursor:pointer}
+#dcal .gr button:disabled{opacity:.2;cursor:default}
+#dcal .gr button.sel{background:#639922;color:#fff;font-weight:600}
+#dcal .gr button.td{box-shadow:inset 0 0 0 1px var(--bd2,#cfcec8)}
+#dcal .ft{display:flex;align-items:center;gap:8px;margin-top:10px}
+#dcal .ft .m{color:var(--tx3,#8a8983);font-size:12px;flex:1}
+#dcal .ft button{font:inherit;font-size:13px;padding:6px 12px;border:0.5px solid var(--bd2,#ddd);
+  background:transparent;border-radius:8px;color:inherit;cursor:pointer}
+/*vh-fallback*/</style>
+<style>.lb,.lb *{pointer-events:none}/*vh-fallback*/</style><style>@media (max-width:860px){body{display:block;overflow:auto;-webkit-overflow-scrolling:touch}.app{flex:none;width:100%;max-width:none}#daybar{gap:6px;padding:6px 10px;font-size:12px}#daybar button{font-size:12px;padding:4px 9px}#dbDate{min-width:0;font-size:13px}#dbPick{font-size:12px;padding:3px 6px}#dbHint{font-size:11px;width:100%;margin-left:0;text-align:left}#dbToday{margin-left:auto;margin-right:auto}}/*vh-fallback*/</style></head>
+<button type="button" id="help" aria-label="用法说明">?</button><div id="helpbox" hidden><div class="hb"><div class="hbt">365 天 · 双环择时盘</div><div class="hbl"><span>一年，每天一张。</span><span>手机上左右划一下，就是前一天、后一天。</span><span>平时看中间那句话就够；</span><span>要办具体的事，看底下几张卡。</span><span>不用全信，当个能翻着玩的东西。</span></div><button type="button" class="hbb" id="helpClose">知道了</button></div></div>
+<div id="daybar">
+  <button id="dbPrev" type="button" aria-label="前一天">‹ 前一天</button>
+  <span id="dbDate"></span>
+  <button id="dbPick" type="button" aria-label="选日期" title="点这里挑日期">选日期</button>
+  <button id="dbNext" type="button" aria-label="后一天">后一天 ›</button>
+  <button id="dbToday" type="button">回到今天</button>
+  <span id="dbHint"></span>
+</div>
+
+<div class="app">
+  <header class="hd">
+    <div class="hd-date" id="h1"></div>
+    <div class="hd-meta" id="sub"></div>
+    <div class="hd-note" id="hdnote"></div>
+  </header>
+  <main class="main">
+    <section class="card disc">
+      <!-- 朝向开关：只有手机端、且浏览器支持方向事件时才由 JS 露出来。
+           默认是关的，点了才接管外环；电脑端永远 hidden，一行都不碰。 -->
+      <button id="cmbtn" class="cmbtn" type="button" hidden><i></i><span id="cmtxt">指南针</span></button>
+      <svg viewBox="0 0 900 900" role="img" xmlns="http://www.w3.org/2000/svg" data-page-node-id="kaba1ZeZCCqLXOsnWXS878">
+        <title id="svgtitle"></title>
+        <desc id="svgdesc" data-page-node-id="S2V2ss9qY5vqqCbSSIIyXQ">双环合盘：外环是八个方位，内环是十二时辰，共用同一个圆心；悬浮或点击某一格，只点亮这一格、其余压暗，右侧给出适宜与不适宜做什么。圆心为本日四柱与四派立场。</desc>
+        <defs data-page-node-id="zRF4UROycwTp8mGMNiEFV1">
+          <radialGradient id="hubFill" cx="50%" cy="40%" r="74%" data-page-node-id="nZOqp19rjoWHuLATM1lr6W">
+            <stop offset="0%" stop-color="var(--bg2)" stop-opacity="1" data-page-node-id="9CXR3FIvJS1y1IK9qKADFO"/>
+            <stop offset="100%" stop-color="var(--bg3)" stop-opacity="1" data-page-node-id="HfjNem67KLHYtoMSj4pcIN"/>
+          </radialGradient>
+          <filter id="hubShadow" x="-25%" y="-25%" width="150%" height="150%" data-page-node-id="g6j86dSWvHWpN8e0yzedLp">
+            <feDropShadow dx="0" dy="2" stdDeviation="7" flood-color="#000" flood-opacity="0.09" data-page-node-id="NqsBm0D0a8OhQEHhdu97v3"/>
+          </filter>
+        </defs>
+
+        <!-- 外环整组可转：手机端接上指南针后绕圆心旋转，让「西北」真的指向西北。
+             刻度、扇区、色带、文字全在这一组里；文字由 JS 反向旋转保持正立。
+             电脑端读不到传感器，这一组永远不转，跟以前一模一样。 -->
+        <g id="dirrot">
+          <!-- 外圈刻度：24 山（每 15°）＋ 8 条方位分界（加长） -->
+          <g id="ticks24" stroke="var(--bd2)" stroke-width="0.6" data-page-node-id="p5CU7LOfYE4e1AYkgT2ljb"></g>
+          <g id="ticks8"  stroke="var(--tx3)" stroke-width="0.9" data-page-node-id="QX9HB0aY7kyHGcyZCvRSRA"></g>
+        <!-- 重要日子的外圈淡光：只有被标的那天才画（构建期注入） -->
+        <g id="halo" pointer-events="none" fill="none"></g>
+
+          <!-- 外环底色与色带 -->
+          <g id="dirring" stroke-width="0.6" data-page-node-id="o2SLRqhFJniJdrUfQJYKgM"></g>
+          <g id="dirarc" fill="none" stroke-width="3.5" stroke-linecap="butt" data-page-node-id="0z4bZzNc0QRoBX3tAmyJ8Y"></g>
+          <g id="dirlabels" text-anchor="middle" dominant-baseline="central" data-page-node-id="rtJqFHKvD8E8C28qben4Bt"></g>
+        </g>
+
+        <!-- 内环（时间维度）：不随朝向转，永远是「几点」 -->
+        <g id="hourac" fill="none" stroke-width="3" stroke-linecap="butt" data-page-node-id="kucXztPvRUo4nOBKB1jQsw"></g>
+        <g id="hourring" stroke-width="0.6" data-page-node-id="l5m7Uef08gszHU6U4fFZX8"></g>
+
+        <!-- 环线 -->
+        <circle cx="450" cy="450" r="420" fill="none" stroke="var(--bd2)" stroke-width="0.8" data-page-node-id="8eP4adFrfSXjYoEz4UwYFI"/>
+        <circle cx="450" cy="450" r="296" fill="none" stroke="var(--bd2)" stroke-width="0.8" data-page-node-id="f0pczF6zplZCUJUirqPbc1"/>
+        <circle cx="450" cy="450" r="294" fill="none" stroke="var(--bd2)" stroke-width="0.8" data-page-node-id="oTGW1wQtAqpMsg3SG7tuyi"/>
+        <circle cx="450" cy="450" r="194" fill="none" stroke="var(--bd2)" stroke-width="0.8" data-page-node-id="lqcQahLDW6PlCNv6OFOBYR"/>
+
+        <!-- 圆心 -->
+        <circle cx="450" cy="450" r="186" fill="url(#hubFill)" stroke="var(--bd2)" stroke-width="0.8" filter="url(#hubShadow)" data-page-node-id="OAgRYdexd7ZFVtt0odASOn"/>
+        <circle cx="450" cy="450" r="179" fill="none" stroke="var(--bd)" stroke-width="0.5" data-page-node-id="Oayy4d1uFEdB2m7JSDi3J6"/>
+        <circle cx="450" cy="450" r="170" fill="none" stroke="var(--bd)" stroke-width="0.5" stroke-dasharray="2 6" data-page-node-id="fV6bD4ZTI11zQEcoHXPEyX"/>
+
+        <g id="nowmark" pointer-events="none" data-page-node-id="Ov1Ot1BkjcvB3VBdwIzCNN"></g>
+        <g id="hourlabels" text-anchor="middle" dominant-baseline="central" data-page-node-id="3DK8ORiEUiVEbvXHur2exL"></g>
+        <g id="hubtext" text-anchor="middle" dominant-baseline="central" pointer-events="none" data-page-node-id="VXq0iQuL4w3dv6Uk5CMJMQ"></g>
+        <circle class="hublink" id="hubcircle" cx="450" cy="450" r="186" fill="transparent" data-page-node-id="kBiVUuIoz5JJsIn2WXBe3J"/>
+      </svg>
+    </section>
+    <section class="card det" id="panel"></section>
+  </main>
+  <section class="tl">
+    <h2 id="tlhead"></h2>
+    <div class="tlgrid" id="tlgrid"></div>
+  </section>
+  <div class="status">
+    <div class="legend">
+      <span><i class="dot" style="background:#639922"></i>首选</span>
+      <span><i class="dot" style="background:#1D9E75"></i>次选</span>
+      <span><i class="dot" style="background:#BA7517"></i>留意</span>
+      <span><i class="dot" style="background:#E24B4A"></i>慎行</span>
+      <span><i class="dot" style="background:#888780"></i>落空</span>
+    </div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+(async function(){
+
+/* =======================================================================
+   ██  每日算卦 · 双环合盘（外环 8 方位 ＋ 内环 12 时辰）  ██
+   版式：一屏控制台 —— 左边圆盘、右边详情（自动分三栏）。
+         详情字号由 JS 二分自适应，任何窗口都装满一屏、不出滚动条；
+         窄屏（≤860px）自动换「短标签」并把详情改成底部抽屉。
+   用法：整份文件照抄，只改下面【数据区】里的 CHART / DIR / HOUR / MAP / TASKS / HUB。
+   几何、配色语义全部固定，不要动。规范见 references/panel-spec.md
+   铁律：十二个时辰的奇门盘各不相同，必须逐时辰排盘后再填，不能复用同一盘。
+   ======================================================================= */
+
+/* ===================== 数据区：START（每次只改这一段） ===================== */
+
+/* CHART.ben / CHART.bian 的排法：
+   lines：6 位 0/1，从【初爻】写到【上爻】（左→右），1=阳爻、0=阴爻
+   dyn  ：动爻位置，0 基下标（初爻=0 … 上爻=5）—— 必须与 ben/bian 两串的实际差异位一致
+   note ：卦象下方的上下卦注释，如「坎上巽下」                                    */
+/* ===== 数据：gzip + base64，365 天全嵌在这个字符串里 ===== */
+var DAYS, DAY_ORDER, DAY_INDEX, _selDate, _todayISO, _birthMMDD, HALO, PAGETURN;
+var CHART, DIR, HOUR, TASKS, HUB;
+var __perf = {};
+/* ===== 数据：按天拆成 data/<日期>.json，进来只拉今天那一天的 ===== */
+var DATA_BASE = "data/";
+var _loadQ = Object.create(null);
+function loadDay(d){
+  if(DAYS[d]) return Promise.resolve(DAYS[d]);
+  if(_loadQ[d]) return _loadQ[d];
+  var p = fetch(DATA_BASE + d + ".json", { cache: "force-cache" })
+    .then(function(r){ if(!r.ok) throw new Error(r.status + " " + d); return r.json(); })
+    .then(function(o){ DAYS[d] = o; delete _loadQ[d]; return o; });
+  p.catch(function(){ delete _loadQ[d]; });
+  _loadQ[d] = p;
+  return p;
+}
+/* 换到某天之后，顺手把前后两天备好 —— 手指连着划的时候不用等 */
+function prefetchNear(d){
+  var i = DAY_INDEX[d];
+  if(i == null) return;
+  [-2,-1,1,2].forEach(function(k){
+    var t = DAY_ORDER[i + k];
+    if(t && !DAYS[t]) loadDay(t).catch(function(){});
+  });
+}
+try{
+  var _t0 = performance.now();
+  var _ro = await fetch(DATA_BASE + "_order.json", { cache: "force-cache" });
+  if(!_ro.ok) throw new Error(_ro.status + " _order.json");
+  DAY_ORDER = await _ro.json();
+  DAYS = Object.create(null);
+  __perf.orderMs = Math.round(performance.now() - _t0);
+  window.__perf = __perf;
+}catch(_e){
+  document.body.innerHTML = '<pre style="padding:28px;font:14px/1.8 -apple-system,sans-serif;white-space:pre-wrap">'
+    + '\u6570\u636e\u6ca1\u52a0\u8f7d\u51fa\u6765\u3002\n\u8bf7\u786e\u8ba4\u7f51\u7edc\u6b63\u5e38\uff0c\u7136\u540e\u5237\u65b0\u4e00\u6b21\u3002\n\n'
+    + String(_e) + '</pre>';
+  throw _e;
+}
+DAY_INDEX = {};
+DAY_ORDER.forEach(function(d, i){ DAY_INDEX[d] = i; });
+_birthMMDD = "11-08";
+/* 重要日子（外圈淡光）：日期 → {n:名头, t:档位 2=重/1=轻}。构建期算好，运行时只查表。 */
+HALO = {"2026-09-23":{"n":"秋分","t":1},"2026-09-25":{"n":"中秋","t":2},"2026-10-01":{"n":"国庆","t":2},"2026-10-08":{"n":"寒露","t":1},"2026-10-18":{"n":"重阳","t":1},"2026-10-23":{"n":"霜降","t":1},"2026-11-07":{"n":"立冬","t":1},"2026-11-08":{"n":"生日","t":2},"2026-11-09":{"n":"农历生日","t":2},"2026-11-22":{"n":"小雪","t":1},"2026-12-07":{"n":"大雪","t":1},"2026-12-22":{"n":"冬至","t":1},"2027-01-01":{"n":"元旦","t":2},"2027-01-05":{"n":"小寒","t":1},"2027-01-15":{"n":"腊八","t":1},"2027-01-20":{"n":"大寒","t":1},"2027-01-30":{"n":"小年","t":1},"2027-02-04":{"n":"立春","t":2},"2027-02-05":{"n":"除夕","t":2},"2027-02-06":{"n":"春节","t":2},"2027-02-19":{"n":"雨水","t":1},"2027-02-20":{"n":"元宵","t":1},"2027-03-06":{"n":"惊蛰","t":1},"2027-03-09":{"n":"龙抬头","t":1},"2027-03-21":{"n":"春分","t":1},"2027-04-05":{"n":"清明","t":1},"2027-04-20":{"n":"谷雨","t":1},"2027-05-01":{"n":"劳动节","t":1},"2027-05-06":{"n":"立夏","t":1},"2027-05-21":{"n":"小满","t":1},"2027-06-06":{"n":"芒种","t":1},"2027-06-09":{"n":"端午","t":2},"2027-06-21":{"n":"夏至","t":1},"2027-07-07":{"n":"小暑","t":1},"2027-07-23":{"n":"大暑","t":1},"2027-08-08":{"n":"七夕·立秋","t":1},"2027-08-16":{"n":"中元","t":1},"2027-08-23":{"n":"处暑","t":1},"2027-09-08":{"n":"白露","t":1}};
+/* 换日时的横滑动画参数（见 BAR_JS 里的 pageSlide）。走 settings.json，改这里不用碰代码。 */
+PAGETURN = {"on":true,"ms":280,"shift":1,"ease":"cubic-bezier(.22,.61,.36,1)","_说明":"换日滑动（相册式：旧页与新页贴在同一条轨道上、一起走一整屏）。","_on说明":"false = 换日不带动画（照样能换，就是瞬切）。","_ms说明":"时长（毫秒）。觉得飘就 200，觉得看不清就 340。","_shift说明":"行程，占屏宽的比例。1 = 整整一屏，相册就是这个值；也只有这一档会做「旧页退场」，小于 1 只有新页推入。","_ease说明":"缓动曲线。想更滑一点可试 cubic-bezier(.3,.8,.3,1)。"};
+/* 默认打开哪一天 —— 三级：
+   ① URL 里带了日期（#2026-12-31）→ 就用它，分享出去的链接能停在指定那天；
+   ② 没带 → 用**打开它的那一刻**。文件是死的，但 new Date() 走的是收礼人自己机器的时钟，
+      今天点开就是今天，不会永远停在第一天；
+   ③ 落在 365 天之外（提前拿到、或一年后才想起来翻）→ 夹到最近的一天，不白屏、不跳回开头。 */
+_todayISO = (function(){
+  var d = new Date();
+  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+})();
+_selDate = (function(){
+  var m = String(location.hash || "").match(/(\d{4}-\d{2}-\d{2})/);
+  if(m && DAY_INDEX[m[1]] != null) return m[1];
+  if(DAY_INDEX[_todayISO] != null) return _todayISO;
+  return _todayISO < DAY_ORDER[0] ? DAY_ORDER[0] : DAY_ORDER[DAY_ORDER.length - 1];
+})();
+await loadDay(_selDate);
+(function(){ var _d = DAYS[_selDate]; CHART = _d.chart; DIR = _d.dir; HOUR = _d.hour; TASKS = _d.tasks; HUB = _d.hub; })();
+var MAP = {
+  N :["zi"],
+  NE:["chou","yin"],
+  E :["mao"],
+  SE:["chen","si"],
+  S :["wu"],
+  SW:["wei","shen"],
+  W :["you"],
+  NW:["xu","hai"]
+};
+
+/* 底部「事项 × 时辰 × 方位」三合一表：dir 必须在 DIR 里，hours 必须是 HOUR 的键 */
+var GEO = {
+  cx:450, cy:450,
+  dir :{ R:420, r:296, labelR:356, span:45, accentR:414 },
+  hour:{ R:294, r:194, labelR:244, span:30, accentR:198 },
+  hub :186
+};
+var ORDER8  = ["E","SE","S","SW","W","NW","N","NE"];
+var ORDER12 = ["zi","chou","yin","mao","chen","si","wu","wei","shen","you","xu","hai"];
+var TONE    = { ok:"--ok",   good:"--good",   warn:"--warn",   bad:"--bad",   gray:"--gray" };
+var TONEBG  = { ok:"--okbg", good:"--goodbg", warn:"--warnbg", bad:"--badbg", gray:"--graybg" };
+var RAINBOW = { ok:"#7D8B3A",good:"#2E8170",  warn:"#B0813C",  bad:"#A8443C", gray:"#87897F" };
+var RING    = { ok:0.16,     good:0.12,       warn:0.12,       bad:0.10,      gray:0.10 };
+
+function pt(deg, rad){
+  var t = deg * Math.PI / 180;
+  return [ +(GEO.cx + rad * Math.cos(t)).toFixed(1), +(GEO.cy + rad * Math.sin(t)).toFixed(1) ];
+}
+function sectorPath(mid, span, R, r){
+  var a = mid - span / 2, b = mid + span / 2;
+  var o1 = pt(a, R), o2 = pt(b, R), i1 = pt(a, r), i2 = pt(b, r);
+  return "M"+o1[0]+" "+o1[1]+"A"+R+" "+R+" 0 0 1 "+o2[0]+" "+o2[1]+
+         "L"+i2[0]+" "+i2[1]+"A"+r+" "+r+" 0 0 0 "+i1[0]+" "+i1[1]+"Z";
+}
+function arcPath(mid, span, r){
+  var a = mid - span / 2, b = mid + span / 2;
+  var p1 = pt(a, r), p2 = pt(b, r);
+  return "M"+p1[0]+" "+p1[1]+"A"+r+" "+r+" 0 0 1 "+p2[0]+" "+p2[1];
+}
+function dirOfHour(k){
+  var m = HOUR[k].mid, half = GEO.dir.span / 2, out = null;
+  ORDER8.forEach(function(dk){
+    var diff = ((m - DIR[dk].mid) % 360 + 360) % 360;
+    if (diff > 180) diff -= 360;
+    if (Math.abs(diff) < half) out = dk;
+  });
+  return out;
+}
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function lis(arr, kind){
+  if(!arr || !arr.length) return "";
+  return arr.map(function(x){ return '<li class="'+kind+'">'+esc(x)+'</li>'; }).join("");
+}
+function toneOf(t){ return "var(" + (TONE[t] || TONE.gray) + ")"; }
+function toneBgOf(t){ return "var(" + (TONEBG[t] || TONEBG.gray) + ")"; }
+
+/* ============================================================
+   圆心内容排版：唯一来源（渲染层与 check-panel 共用同一组坐标）
+   ------------------------------------------------------------
+   为什么单独抽出来：圆心在环里，写超了不会被裁掉，而是直接盖到
+   内环时辰那圈字上——2026-09-11 窄屏就是这么坏的（六爻第二卦
+   一路画到 r≈248，压在未/午/巳三格上；落款那行画到 r≈335）。
+   所以圆心任何一段墨迹都必须由这里出，四角都要落在 HUBFIT.safe
+   之内，check-panel 会逐个复算。
+   ============================================================ */
+var HUBFIT = {
+  safe : 170,   /* 圆心内圈虚线 r=170：圆心文字的四角一律不许越过它 */
+  narrow: {                     /* 窄屏（≤860px）：字大、只留日期/卦名/六爻/落款 */
+    dateY:330, dateFs:21,
+    nameY:378, nameFs:28,
+    colX:[378,522], smallY:402, smallFs:15,
+    hexTop:414, hexBh:7.5, hexGap:15, hexW:104,
+    verdictY:558, verdictFs:16
+  },
+  wide  : {                     /* 桌面：原 v2.0 一屏版式，一个字没动 */
+    kickerY:318, kickerFs:10.5,
+    dateY:341,  dateFs:14,
+    pillarsY:362, pillarsFs:11.5,
+    hourY:379,  hourFs:11,
+    colX:[346,554], labelY:408, labelFs:11.5,
+    hexTop:426, hexBh:4.6, hexGap:11, hexW:54,
+    noteY:502, noteFs:10,
+    ruleY:391, ruleX:396, ruleW:108,
+    verdictY:548, verdictFs:13,
+    windowY:570,  windowFs:12.5,
+    dynNoteY:526, dynNoteFs:10
+  }
+};
+
+/* 文字宽度估算（1em ≈ 一个汉字）：与 check-panel.mjs 同一套口径 */
+function hubTextW(s, fs){
+  var w = 0, i, ch, c;
+  s = String(s == null ? "" : s);
+  for(i = 0; i < s.length; i++){
+    ch = s.charAt(i); c = s.charCodeAt(i);
+    if((c >= 0x4e00 && c <= 0x9fff) || (c >= 0x3400 && c <= 0x4dbf) ||
+       (c >= 0x3000 && c <= 0x303f) || (c >= 0xff00 && c <= 0xffef)) w += 1;
+    else if(c === 0xb7) w += 0.45;
+    else if(c === 0x2013 || c === 0x2014) w += 0.5;
+    else if(ch === " ") w += 0.28;
+    else if(/[0-9A-Za-z]/.test(ch)) w += 0.55;
+    else w += 0.6;
+  }
+  return w * fs;
+}
+/* 兜底：字号往回收，直到这一行的四角能容身（只缩不放） */
+function hubFitFs(t, y, fsMax){
+  var fs = fsMax, half, dy, allow, em;
+  em = hubTextW(t, 1);                          /* 每 em 的字宽，与字号无关 */
+  while(fs > 8){
+    half  = em * fs / 2;
+    dy    = Math.max(Math.abs((y - fs * 0.95) - GEO.cy), Math.abs((y + fs * 0.2) - GEO.cy));
+    allow = Math.sqrt(Math.max(0, HUBFIT.safe * HUBFIT.safe - dy * dy));
+    if(half <= allow - 3) return fs;
+    fs -= 0.5;
+  }
+  return fs;
+}
+/* 一个卦象的六条爻（从初爻往上画；0=阴 1=阳；动爻橙色） */
+function hubHexRects(hx, cx, top, bh, gap, w){
+  var out = [], seg = (w - 8) / 2, r, y, up, dyn, fill, op;
+  for(r = 0; r < 6; r++){
+    y   = top + r * (bh + gap);
+    up  = 5 - r;
+    dyn = (hx.dyn || []).indexOf(up) > -1;
+    fill = dyn ? "#BA7517" : "var(--tx)";
+    op   = dyn ? 0.95 : 0.78;
+    if(hx.lines.charAt(up) === "1"){
+      out.push({ x: cx - w / 2, y: y, w: w, h: bh, fill: fill, op: op });
+    } else {
+      out.push({ x: cx - w / 2,       y: y, w: seg, h: bh, fill: fill, op: op });
+      out.push({ x: cx + w / 2 - seg, y: y, w: seg, h: bh, fill: fill, op: op });
+    }
+  }
+  return out;
+}
+/* 圆心要画的东西：texts（文字）＋ rects（爻块/分隔线）。渲染层直接照单序列化 */
+function hubLayout(short){
+  var F = short ? HUBFIT.narrow : HUBFIT.wide;
+  var texts = [], rects = [], cols;
+  function T(t, x, y, fs, fill, weight, ls, fit){
+    if(t === "" || t == null) return;
+    texts.push({ t: t, x: x, y: y, fs: fit ? hubFitFs(t, y, fs) : fs,
+                 fill: fill, w: weight || "", ls: ls || 0 });
+  }
+  /* —— 无卦象分支：圆心改画「四柱 + 四派立场」 ——
+     ★ 窄屏要单独给坐标：HUBFIT.narrow 是模板给「六爻圆心」定的字段
+       （dateY / nameY / hexTop…），这里用到的 kickerY / pillarsY / hourY / windowY
+       在 narrow 里根本不存在 → 那几行会带着 y="undefined" 被静默丢掉。
+     ★ 窄屏字号不能小：手机 390px 屏宽下圆盘 ≈ 374px，1 单位 ≈ 0.41px，
+       20 单位的字才 8px。所以窄屏圆心只留 4 件东西：日期 / 四柱 / 总评词 / 四派立场；
+       日课、落款、最佳时段、提醒都在下面的抽屉里。 */
+  if(!CHART.ben){
+    var _rows = CHART.hubRows || [];
+    if(short){
+      T(CHART.date + (CHART.weekday ? " " + CHART.weekday : ""), 450, 320, 22, "var(--tx3)", "", 0, 1);
+      T("本命 " + CHART.pillarsShort, 450, 366, 28, "var(--tx2)", "500", 0, 1);
+      T(CHART.hubTitle, 450, 428, 38, "var(--tx)", "500", 0, 1);
+      _rows.forEach(function(r, i){
+        if(!r) return;
+        rects.push({ x: 356, y: 470 + i * 36 - 8, w: 10, h: 10, fill: r.color, op: 0.9 });
+        T(r.t, 450, 470 + i * 36, 26, r.color, "500", 0, 1);
+      });
+      return { texts: texts, rects: rects };
+    }
+    T(CHART.hubKicker, 450, F.kickerY, F.kickerFs, "var(--tx3)", "", 3);
+    T(CHART.date + (CHART.weekday ? " " + CHART.weekday : ""), 450, F.dateY, F.dateFs, "var(--tx)");
+    T("本命 " + CHART.pillarsShort, 450, F.pillarsY, F.pillarsFs, "var(--tx2)");
+    T(CHART.hourPillar, 450, F.hourY, F.hourFs, "var(--tx3)", "", 0, 1);
+    rects.push({ line: 1, x: F.ruleX, y: F.ruleY, w: F.ruleW, h: 0.8, fill: "var(--bd)" });
+    T(CHART.hubTitle, 450, 414, 20, "var(--tx)", "500", 0, 1);
+    var _ry = [446, 466, 486, 506];
+    _rows.forEach(function(r, i){
+      if(!r) return;
+      rects.push({ x: 336, y: _ry[i] - 5, w: 7, h: 7, fill: r.color, op: 0.9 });
+      T(r.t, 450, _ry[i], 11.5, r.color, "500");
+    });
+    T(CHART.hubNote, 450, 528, 11, "var(--tx3)", "", 0, 1);
+    T(CHART.verdictLine, 450, F.verdictY, F.verdictFs, "var(--tx)", "", 0, 1);
+    T(CHART.bestWindow,  450, F.windowY,  F.windowFs,  "#639922", "500", 0, 1);
+    return { texts: texts, rects: rects };
+  }
+  cols = CHART.bian ? [[CHART.ben, F.colX[0], "本卦"], [CHART.bian, F.colX[1], "变卦"]]
+                    : [[CHART.ben, short ? 450 : 450, "本卦"]];
+
+  if(short){
+    T(CHART.date + (CHART.weekday ? " " + CHART.weekday : ""), 450, F.dateY, F.dateFs, "var(--tx3)");
+    T(CHART.ben.name + (CHART.bian ? " → " + CHART.bian.name : ""), 450, F.nameY, F.nameFs, "var(--tx)", "500");
+    cols.forEach(function(c){
+      T(c[0].name, c[1], F.smallY, F.smallFs, "var(--tx2)");
+      rects = rects.concat(hubHexRects(c[0], c[1], F.hexTop, F.hexBh, F.hexGap, F.hexW));
+    });
+    T(CHART.verdictLine, 450, F.verdictY, F.verdictFs, "#639922", "", 0, 1);
+  } else {
+    T(CHART.hubKicker, 450, F.kickerY, F.kickerFs, "var(--tx3)", "", 3);
+    T(CHART.date + (CHART.weekday ? " " + CHART.weekday : ""), 450, F.dateY, F.dateFs, "var(--tx)");
+    T(CHART.pillarsShort || CHART.pillars, 450, F.pillarsY, F.pillarsFs, "var(--tx2)");
+    T("占于 " + CHART.hourPillar, 450, F.hourY, F.hourFs, "var(--tx3)");
+    rects.push({ line: 1, x: F.ruleX, y: F.ruleY, w: F.ruleW, h: 0.8, fill: "var(--bd)" });
+    cols.forEach(function(c){
+      T((CHART.bian ? c[2] + " · " : "本卦 · ") + c[0].name, c[1], F.labelY, F.labelFs, "var(--tx)", "500");
+      rects = rects.concat(hubHexRects(c[0], c[1], F.hexTop, F.hexBh, F.hexGap, F.hexW));
+      T(c[0].note, c[1], F.noteY, F.noteFs, "var(--tx3)");
+    });
+    T(CHART.verdictLine, 450, F.verdictY, F.verdictFs, "var(--tx)", "", 0, 1);
+    T(CHART.bestWindow,  450, F.windowY,  F.windowFs,  "#639922", "500");
+    T(CHART.bian ? (CHART.dynNote || "") : "六爻安静 · 本次无动爻", 450, F.dynNoteY, F.dynNoteFs, "var(--tx3)");
+  }
+  return { texts: texts, rects: rects };
+}
+/* 把圆心墨迹折成矩形（给 check-panel 复算四角；渲染层不用） */
+function hubInk(short){
+  var L = hubLayout(short), out = [];
+  L.texts.forEach(function(t){
+    var half = (hubTextW(t.t, t.fs) + (t.ls || 0) * String(t.t).length) / 2;
+    out.push({ tag: t.t, x: t.x - half, y: t.y - t.fs * 0.95, w: half * 2, h: t.fs * 1.15 });
+  });
+  L.rects.forEach(function(r){
+    out.push({ tag: r.line ? "分隔线" : "爻块", x: r.x, y: r.y, w: r.w, h: r.h });
+  });
+  return out;
+}
+
+/* ---- 标题 ---- */
+/* ↑ 这一行是 tools/check-panel.mjs 与 tools/build-panel.mjs 的求值切点：
+   它之前只能是「数据区 + 几何常量 + 纯函数」，不能出现任何 DOM 操作。
+   页面壳文案、交互、自适应都在文件末尾统一处理。                                     */
+
+/* ===================== 以下渲染与交互 ===================== */
+
+/* ---- 外圈刻度：24 山（每 15°）＋ 8 条方位分界（加长） ---- */
+(function(){
+  var a24 = "", a8 = "", i, p;
+  for(i = 0; i < 24; i++){
+    p = [pt(270 + i * 15, 422), pt(270 + i * 15, 430)];
+    a24 += '<line x1="'+p[0][0]+'" y1="'+p[0][1]+'" x2="'+p[1][0]+'" y2="'+p[1][1]+'"/>';
+  }
+  for(i = 0; i < 8; i++){
+    p = [pt(22.5 + i * 45, 422), pt(22.5 + i * 45, 436)];
+    a8 += '<line x1="'+p[0][0]+'" y1="'+p[0][1]+'" x2="'+p[1][0]+'" y2="'+p[1][1]+'"/>';
+  }
+  document.getElementById("ticks24").innerHTML = a24;
+  document.getElementById("ticks8").innerHTML = a8;
+})();
+
+/* ---- 外环扇区 + 色带 ---- */
+function renderDirRing(){
+  var sp = "", ac = "";
+  ORDER8.forEach(function(k){
+    var s = DIR[k]; if(!s) return;
+    var c = RAINBOW[s.tone] || RAINBOW.gray;
+    var op = (typeof s.ring === "number") ? s.ring : (RING[s.tone] || 0.10);
+    var attr = ' data-kind="dir" data-key="'+k+'"';
+    sp += '<path class="sector"'+attr+' d="'+sectorPath(s.mid, GEO.dir.span, GEO.dir.R, GEO.dir.r)+
+          '" fill="'+c+'" fill-opacity="'+op+'" stroke="'+c+'"/>';
+    ac += '<path class="acc"'+attr+' d="'+arcPath(s.mid, GEO.dir.span * 0.93, GEO.dir.accentR)+'" stroke="'+c+'"/>';
+  });
+  document.getElementById("dirring").innerHTML = sp;
+  document.getElementById("dirarc").innerHTML  = ac;
+}
+
+/* ---- 内环扇区 + 色带 ---- */
+function renderHourRing(){
+  var sp = "", ac = "", lb = "";
+  ORDER12.forEach(function(k){
+    var s = HOUR[k]; if(!s) return;
+    var c = RAINBOW[s.tone] || RAINBOW.gray;
+    var op = (typeof s.ring === "number") ? s.ring : (RING[s.tone] || 0.10);
+    var attr = ' data-kind="hr" data-key="'+k+'"';
+    sp += '<path class="sector"'+attr+' d="'+sectorPath(s.mid, GEO.hour.span, GEO.hour.R, GEO.hour.r)+
+          '" fill="'+c+'" fill-opacity="'+op+'" stroke="'+c+'"/>';
+    ac += '<path class="acc"'+attr+' d="'+arcPath(s.mid, GEO.hour.span * 0.86, GEO.hour.accentR)+'" stroke="'+c+'"/>';
+    if(s.label){
+      var a = pt(s.mid, GEO.hour.labelR);
+      var ys = [a[1]-16, a[1], a[1]+16];
+      var fs = [12, 11, 11];
+      var co = [c, c, "var(--tx2)"];
+      var wt = ["500", "500", ""];
+      var g = '<g class="lb"'+attr+'>';
+      s.label.forEach(function(L, i){
+        g += '<text x="'+a[0]+'" y="'+ys[i]+'" font-size="'+fs[i]+'"'+(wt[i]?' font-weight="'+wt[i]+'"':'')+
+             ' fill="'+co[i]+'">'+esc(L)+'</text>';
+      });
+      lb += g + '</g>';
+    }
+  });
+  document.getElementById("hourring").innerHTML = sp;
+  document.getElementById("hourac").innerHTML  = ac;
+}
+
+/* ---- 重要日子的外圈淡光（构建期注入，2026-09-17）----
+   位置：最外圈刻度（半径 422~436）之外、半径 440 上。
+   画法：同一半径上叠几条「越粗越淡」的同心圆，叠出晕开的感觉。
+   档位：t=2 三层（亮，一年约 9 天）／ t=1 两层（淡）。
+   颜色走 CSS 变量 --halo，亮/暗主题各一个。 */
+function renderHalo(){
+  var g = document.getElementById("halo"); if(!g) return;
+  g.innerHTML = "";
+  var h = (typeof HALO === "object" && HALO) ? HALO[_selDate] : null;
+  if(!h) return;
+  var R = 440, layers = (h.t === 2)
+    ? [[13, 0.085], [6.5, 0.20], [2.6, 0.58]]
+    : [[7, 0.07], [1.8, 0.30]];
+  var out = "";
+  for(var i = 0; i < layers.length; i++){
+    out += '<circle cx="' + GEO.cx + '" cy="' + GEO.cy + '" r="' + R +
+      '" fill="none" stroke="var(--halo)" stroke-width="' + layers[i][0] +
+      '" stroke-opacity="' + layers[i][1] + '"/>';
+  }
+  g.innerHTML = out;
+}
+/* ---- 此刻位置指针：落在两环之间的空档，随时间自己走 ---- */
+function renderNowMark(){
+  var _nm = document.getElementById('nowmark'); if(!_nm) return;
+  _nm.innerHTML = '';
+  if(!CHART.showNow) return;
+  if(_selDate !== _todayISO) return;
+  var d = new Date();
+  var ang = 270 + (d.getHours() + d.getMinutes() / 60) * 15;
+  /* ★ 2026-09-16 定稿：用户选定「日晷式进度弧」。
+     圆心外那圈框（半径 186），从 0 点起顺时针画到「此刻」—— 弧的末端就是现在。
+     前几版为什么不成立：黑三角压在外环上（突兀 + 挡字）；把某格填色提浓 / 给某格多叠一条弧
+     —— 那都是「一格长得跟别人不一样」，大脑会先读成「画错了」。进度弧是「整圈有规律」，
+     所以不会读成错误。
+     角度按 时+分/60+秒/3600+毫秒/3600000 连续换算：它一直在走，不是每次都落到格子正中间。 */
+  var _hr = d.getHours(), _mi = d.getMinutes(), _se = d.getSeconds(), _ml = d.getMilliseconds();
+  var _angN = 270 + ((_hr + _mi / 60 + _se / 3600 + _ml / 3600000) / 24) * 360;
+  var _a0 = 270, _a1 = _angN; if (_a1 < _a0) _a1 += 360;
+  /* 坐标自己算、精度给到 0.01：模板的 pt() 是 toFixed(1)，而一天 360° 摊到半径 186 上
+     每秒只挪 0.014 个单位 —— 四舍五入到 0.1 就把「它在动」这件事整个吃没了。 */
+  function _ppt(deg, r){ var _t2 = deg * Math.PI / 180;
+    return [ (GEO.cx + r * Math.cos(_t2)).toFixed(2), (GEO.cy + r * Math.sin(_t2)).toFixed(2) ]; }
+  var _q0 = _ppt(_a0, 186), _q1 = _ppt(_a1, 186);
+  var _lgf = (_a1 - _a0) > 180 ? 1 : 0;
+  var _ix = Math.floor(((_angN - 270) + 15) / 30) % 12; if (_ix < 0) _ix += 12;
+  var _hs = HOUR[ORDER12[_ix]];
+  var _col = RAINBOW[(_hs && _hs.tone) || 'gray'] || RAINBOW.gray;
+  var _nowArc = '<path d="M' + _q0[0] + ' ' + _q0[1] + 'A186 186 0 ' + _lgf + ' 1 ' + _q1[0] + ' ' + _q1[1] +
+    '" fill="none" stroke="' + _col + '" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="' + _q1[0] + '" cy="' + _q1[1] + '" r="5" fill="' + _col + '"/>';
+  var tip = pt(ang, 297), b1 = pt(ang - 1.0, 318), b2 = pt(ang + 1.0, 318);
+  var hh = ("0" + d.getHours()).slice(-2), mm = ("0" + d.getMinutes()).slice(-2);
+  document.getElementById("nowmark").innerHTML =
+    '<polygon points="'+tip[0]+','+tip[1]+' '+b1[0]+','+b1[1]+' '+b2[0]+','+b2[1]+'" fill="none"/>'+
+    '<title>此刻 '+hh+':'+mm+':'+('0'+_se).slice(-2)+'</title>' + _nowArc;
+}
+
+/* ---- 卦象（六爻）画在圆心，几何在 hubHexRects / hubLayout 里，这里不再另写一份 ---- */
+/* ============================================================
+   方位盘跟随手机朝向（只对手机端生效，电脑端连按钮都不出现）
+   ------------------------------------------------------------
+   默认是「关」：盘正北朝上摆着，一动不动 —— 跟没这功能时一样。
+   点一下按钮才接管：屏幕转到哪，外环的「西北」就转到哪，
+   让盘上的方位真的对上脚底下的方向。
+
+   为什么不再做「打开就自动转」：手机浏览器（安卓 Chrome、小米自带浏览器、
+   iOS Safari）普遍要求页面先被用户碰一下才肯发传感器数据。自动模式在真机上
+   只能干等三秒，然后误报一句「读不到方向」——用户看到的就是「一进去就说读不到，
+   点一下才转」。一个显式按钮同时解决两件事：给出交互、把开关权交回用户。
+
+   内环十二时辰完全不参与：它讲的是「几点」，是时间的绝对刻度，
+   跟手机朝哪边毫无关系。这个盘上只有外环这一组会转。
+   ============================================================ */
+var CM = window.CM = (function(){
+  var g   = document.getElementById('dirrot');
+  var btn = document.getElementById('cmbtn');
+  var txt = document.getElementById('cmtxt');
+  if(!g) return null;
+
+  var S = {
+    on:false,        // 用户按下开关没有 —— 关着的时候传感器事件一律不理
+    st:"off",        // off | wait | on | fail，只影响按钮长什么样
+    live:false,      // 收到过有效朝向
+    rot:0,           // 当前渲染角度（可累积超过 360，视觉等价）
+    target:0,        // 目标角度
+    raf:0,
+    sawAbs:false,    // 收到过「带值」的 deviceorientationabsolute
+    sig:1,           // 选中轴的水平信号强度（0.707~1）
+    lastT:0,         // 上一次朝向事件的时刻（给缓动判断事件间隔）
+    lastFrameT:0,    // 上一帧的时刻（给 dt 算真实帧间隔）
+    attached:false,
+    waitT:0
+  };
+
+  var TXT = { off:"指南针", wait:"开启中…", on:"罗盘 · 开", fail:"读不到方向" };
+
+  /* 按钮只有四张脸，全都由这一个函数改，省得文案和灯色对不上 */
+  function setSt(st){
+    S.st = st;
+    if(!btn || !txt) return;
+    btn.dataset.st = st;
+    txt.textContent = TXT[st];
+    /* 读不到方向不是终点 —— 告诉用户还有一条路，否则他只会觉得这功能坏了 */
+    if(st === "fail") tip("读不到方向 · 可用手指转动外环", 4600);
+  }
+
+  /* 上一次选的是哪根轴，给迟滞用（跨帧记住，避免 45° 附近来回切） */
+  var lastUseTop = true;
+
+  /* 把任意角度差归一化到 (-180, 180]，避免 359°→0° 时整圈倒转 */
+  function norm(d){ return ((d + 180) % 360 + 360) % 360 - 180; }
+
+  /* ============================================================
+     朝向换算：按姿态选轴，别只认一个轴。
+     设备 y 轴＝屏幕顶端，z 轴＝屏幕法线。两轴都投到世界水平面：
+     平放时顶端轴信号满格、法线轴塌成 0；竖着拿时正好相反。
+     常见的写法只算法线轴，平放就会用 0.01 的信号去算 atan2，
+     读数被 0.1° 级的抖动甩出几十度 —— 这是"乱跳"的真正来源。
+     ============================================================ */
+  function analyzeAxes(alpha, beta, gamma){
+    var k = Math.PI / 180;
+    var x = (beta || 0) * k, y = (gamma || 0) * k, z = (alpha || 0) * k;
+    var cX = Math.cos(x), sX = Math.sin(x);
+    var cY = Math.cos(y), sY = Math.sin(y);
+    var cZ = Math.cos(z), sZ = Math.sin(z);
+
+    var yX = -sZ * cX;                  /* 顶端轴 → 世界 X */
+    var yY =  cZ * cX;                  /* 顶端轴 → 世界 Y */
+    var zX =  cZ * sY + sZ * sX * cY;   /* 法线轴 → 世界 X */
+    var zY =  sZ * sY - cZ * sX * cY;   /* 法线轴 → 世界 Y */
+
+    var topLen  = Math.sqrt(yX * yX + yY * yY);
+    var faceLen = Math.sqrt(zX * zX + zY * zY);
+    /* 两轴正交，所以 topLen²+faceLen²=1，选中的那个永远 ≥0.707。
+       45° 附近两者几乎相等，直接比大小会在临界点反复来回切，
+       盘就会在两张读数之间闪——加 0.06 的迟滞带把它压住。 */
+    var useTop;
+    if(lastUseTop) useTop = !(faceLen > topLen + 0.06);
+    else           useTop =  (topLen > faceLen + 0.06);
+    lastUseTop = useTop;
+    var ang = useTop ? Math.atan2(yX, yY) : Math.atan2(-zX, -zY);
+    return {
+      h: ((ang * 180 / Math.PI) + 360) % 360,
+      sig: useTop ? topLen : faceLen     /* 归一到 0~1 */
+    };
+  }
+
+  /* 整组转 rot；每格标签绕自己锚点反向转，字保持正立。
+     一次 querySelectorAll 拿全部标签——每帧 8 次单独 query 在手机上会掉帧。 */
+  function apply(rot){
+    g.setAttribute("transform", "rotate(" + rot.toFixed(2) + " 450 450)");
+    var lns = g.querySelectorAll('g.lb[data-kind="dir"]');
+    for(var i = 0; i < lns.length; i++){
+      var lb = lns[i], s = DIR[lb.getAttribute("data-key")];
+      if(!s) continue;
+      var a = pt(s.mid, GEO.dir.labelR);
+      lb.setAttribute("transform",
+        "rotate(" + (-rot).toFixed(2) + " " + a[0] + " " + a[1] + ")");
+    }
+  }
+
+  /* 时钟：优先 performance.now（不受系统时间调整影响），退回复 Date.now */
+  function clock(){
+    return (typeof performance !== "undefined" && performance.now)
+      ? performance.now() : Date.now();
+  }
+
+  /* 指数平滑要按「时间」算，不能按「帧」算。
+     写成每帧固定收 20%，在 30fps 上要 467ms 才追上，
+     在 120fps 上只要 117ms —— 同一份代码，好屏上灵敏度是差屏的 4 倍。
+     改成 k = 1-exp(-dt/TAU)：TAU=75ms 时 60fps 的 k 正好是 0.200，
+     也就是「60fps 上的手感和改之前一模一样」，其余帧率自动对齐。
+
+     另外，事件间隔一稀（安卓判定静止会降到 0.5Hz），
+     一次 20° 的阶跃会在 233ms 内冲到位然后干等 1.9 秒，看着就是「一顿一顿」。
+     间隔超过 250ms 就把 TAU 逐步放大，把这一跳摊成一段缓动，
+     从「啪」变成「挪」。高频时（<250ms）完全不加，转动手感不变。 */
+  function tick(){
+    var now = clock();
+    var dt = S.lastFrameT ? (now - S.lastFrameT) / 1000 : 0.0167;
+    S.lastFrameT = now;
+    /* 有些环境会把 performance.now() 的精度粗化，甚至同一毫秒内连跑两帧，
+       dt 算出 0 就会让 k=0、盘彻底卡住。兜底退回 60fps 的帧长。 */
+    if(!(dt > 0.002)) dt = 0.0167;
+    if(dt > 0.1) dt = 0.1;               // 切后台回来别一步跳过去
+    var gap = S.lastT ? (now - S.lastT) / 1000 : 0;
+    var tau = 0.075 + Math.max(0, Math.min(gap - 0.25, 1.0)) * 0.22;
+    var k = 1 - Math.exp(-dt / tau);
+
+    var d = norm(S.target - S.rot);
+    if(Math.abs(d) < 0.08){ S.rot = S.target; apply(S.rot); S.raf = 0; return; }
+    S.rot += d * k;
+    apply(S.rot);
+    S.raf = requestAnimationFrame(tick);
+  }
+  function run(){ if(!S.raf) S.raf = requestAnimationFrame(tick); }
+
+  function onOrient(e){
+    if(!S.on) return;    // 开关关着：事件照收，但一个像素都不动
+    /* ★ 看到 deviceorientationabsolute 这个「类型」不等于拿到了绝对朝向。
+       实测（CDP 真实传感器通道）：页面一加载，浏览器先发一个
+       deviceorientationabsolute，alpha/beta/gamma 全是 null，是个空壳。
+       旧代码只看类型就把 S.sawAbs 置 true，之后所有带值的相对事件
+       全被下面那句当成「已有绝对朝向」丢掉 —— 盘一动不动，
+       直到某些浏览器在页面被激活后补发一个带值的绝对事件，才突然开始转。
+       （真机上的表现就是「点一下屏幕才转」。）
+       所以必须先看数据有没有值，再决定要不要认这个绝对通道。 */
+    var hasAlpha = (typeof e.alpha === "number" && e.alpha !== null);
+    if(e.type === "deviceorientationabsolute"){
+      if(hasAlpha) S.sawAbs = true;
+    } else if(S.sawAbs){
+      return;    // 确实已有绝对朝向，忽略相对事件，免得来回打架
+    }
+    var h = null, sig = 1;
+    if(typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)){
+      h = e.webkitCompassHeading;                       // iOS：真北，最准
+    } else if(typeof e.alpha === "number" && e.alpha !== null){
+      var r = analyzeAxes(e.alpha, e.beta, e.gamma);
+      var sa = (screen.orientation && screen.orientation.angle) || 0;
+      h = (r.h + sa + 360) % 360;                        // 横竖屏补偿
+      sig = r.sig;
+    }
+    if(h == null) return;
+
+    if(!S.live){
+      S.live = true;
+      clearTimeout(S.waitT);
+      setSt("on");
+      run();
+    }
+    S.sig = sig;
+    S.target = -h;    // 盘转 -heading：屏幕正上方就是手机现在的朝向
+    S.lastT = clock();  // 记事件时刻，tick 靠它判断「这次隔了多久」
+    run();
+  }
+
+  function attach(){
+    if(S.attached) return;
+    S.attached = true;
+    window.addEventListener("deviceorientationabsolute", onOrient, true);
+    window.addEventListener("deviceorientation", onOrient, true);
+  }
+
+  /* 授权门只有 iOS 有。
+     ★ 坑：Chrome（桌面和安卓都算）也挂了 DeviceOrientationEvent.requestPermission 这个方法，
+       调用它会直接 resolve("granted")。所以「这个方法存在 ⇒ 需要授权」是假前提——
+       按它判断会把安卓误判成 iOS，安卓上就永远卡在「等你点一下」，反而不转了。
+       必须按平台判。 */
+  function isIOS(ua){
+    return /iPhone|iPad|iPod/i.test(ua) ||
+           (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);   // iPadOS 13+ 伪装成 Mac
+  }
+
+  function start(){
+    /* 不写 if(S.on) return —— 上次失败时 on 还挂着 true，
+       重试会被自己挡住。状态全在这里重置。 */
+    S.on = true;
+    S.live = false;
+    setSt("wait");
+
+    function go(){
+      attach();
+      /* 点了还没数据：这台设备没磁力计，或者浏览器把传感器关了。
+         最多等 2.5 秒就给个准话，别让它一直转圈。 */
+      clearTimeout(S.waitT);
+      S.waitT = setTimeout(function(){
+        if(S.on && !S.live) setSt("fail");
+      }, 2500);
+    }
+
+    var ua = navigator.userAgent || "";
+    if(isIOS(ua) && typeof DeviceOrientationEvent.requestPermission === "function"){
+      try{
+        DeviceOrientationEvent.requestPermission().then(function(r){
+          if(r === "granted") go();
+          else { S.on = false; setSt("fail"); }
+        }).catch(function(){ S.on = false; setSt("fail"); });
+      }catch(err){ S.on = false; setSt("fail"); }
+    } else {
+      go();
+    }
+  }
+
+  function stop(){
+    S.on = false;
+    S.live = false;
+    clearTimeout(S.waitT);
+    S.target = 0;        // 交还方向盘：平滑转回正北朝上
+    setSt("off");
+    run();
+  }
+
+  if(btn){
+    btn.addEventListener("click", function(){
+      /* 关着 / 上次失败 → 开（失败后再点就是重试）；
+         正在连 / 已经开着 → 关。按钮上永远只写「现在是什么状态」。 */
+      if(S.st === "off" || S.st === "fail") start();
+      else stop();
+    });
+  }
+
+  /* ============================================================
+     手指拖动外环 —— 不依赖任何传感器的保底通路
+     ------------------------------------------------------------
+     微信内置浏览器、file:// 本地打开、没有磁力计的机器，
+     这些场景下传感器一律读不到，但盘不能就这么废掉。
+     真实罗盘本来就是手拿着对北的：按住外环转，转到对得上为止。
+
+     只认外环那一圈（半径 296~452），所以盘心区域仍能滚动页面。
+     传感器正在接管（wait / on）时不抢，避免两股力量打架。
+     ============================================================ */
+  var DRAG = { on:false, id:null, lastA:0, rot0:0, moved:0, accum:0, geo:null };
+  var swallowClick = false;
+
+  /* 屏幕坐标 → 极坐标（相对盘心）。viewBox 是 0 0 900 900、
+     preserveAspectRatio 默认 xMidYMid meet，所以按短边算缩放、再补居中偏移。
+     几何基准在按下那一刻取一份存住，整个拖动过程都用它 ——
+     中途布局要是抖了（地址栏收起、抽屉变高），也不会算出前后不一致的角度。 */
+  function svgGeo(){
+    var svg = document.querySelector(".disc svg");
+    if(!svg) return null;
+    var r = svg.getBoundingClientRect();
+    var scale = Math.min(r.width, r.height) / 900;
+    if(!(scale > 0)) return null;
+    return {
+      scale: scale,
+      ox: r.left + (r.width  - 900 * scale) / 2,
+      oy: r.top  + (r.height - 900 * scale) / 2
+    };
+  }
+  function polarAt(clientX, clientY, geo){
+    var x = (clientX - geo.ox) / geo.scale - 450;
+    var y = (clientY - geo.oy) / geo.scale - 450;
+    return { r: Math.sqrt(x * x + y * y), a: Math.atan2(y, x) * 180 / Math.PI };
+  }
+
+  function onDown(e){
+    if(DRAG.on) return;
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    var t = e.target;
+    if(t && t.closest && t.closest("button, a")) return;   // 按钮归按钮
+
+    var geo = svgGeo();
+    if(!geo) return;
+    var p = polarAt(e.clientX, e.clientY, geo);
+    if(p.r < 296 || p.r > 452) return;        // 只有外环那一圈
+    if(S.st === "wait" || S.st === "on") return;   // 传感器正在接管，别抢
+
+    DRAG.on = true; DRAG.id = e.pointerId; DRAG.geo = geo;
+    DRAG.lastA = p.a;          /* 只记「上一次的角度」，不记绝对起点 */
+    DRAG.accum = 0;
+    DRAG.rot0 = S.rot;
+    DRAG.moved = 0;
+    window.__dragging = true;  /* 让 hover 处理器闭嘴，别再换详情、别顶高抽屉 */
+
+    /* 上次读不到方向、用户改用手指了 —— 按钮退回中性态，别一直红着 */
+    if(S.st === "fail") setSt("off");
+
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
+    var host = document.querySelector(".disc");
+    if(host) host.dataset.drag = "1";
+    e.preventDefault();
+  }
+
+  function onMove(e){
+    if(!DRAG.on || e.pointerId !== DRAG.id) return;
+    var p = polarAt(e.clientX, e.clientY, DRAG.geo);
+    if(!p) return;
+    /* ★ 用「累计增量」而不是「和按下点的角度差」。
+       手指钻进盘心（r < 120）时 atan2 会瞬间跳 180°，
+       那一段直接忽略，别让盘猛甩一圈。 */
+    if(p.r < 120) return;
+    var d = norm(p.a - DRAG.lastA);
+    DRAG.lastA = p.a;
+    DRAG.accum += d;
+    DRAG.moved = Math.abs(DRAG.accum);
+
+    /* 手动就是手动：手指到哪盘到哪，不走缓动 */
+    S.rot = S.target = DRAG.rot0 + DRAG.accum;
+    if(S.raf){ cancelAnimationFrame(S.raf); S.raf = 0; }
+    apply(S.rot);
+    e.preventDefault();
+  }
+
+  function onUp(e){
+    if(!DRAG.on || (e && e.pointerId !== DRAG.id)) return;
+    DRAG.on = false; DRAG.id = null; DRAG.geo = null;
+    window.__dragging = false;
+    var host = document.querySelector(".disc");
+    if(host) delete host.dataset.drag;
+
+    /* 差一点点就正的，顺手吸回正北，省得留个 2° 的歪。 */
+    if(Math.abs(norm(S.rot)) < 3){ S.rot = S.target = 0; apply(0); }
+
+    /* 拖过的这一下，不要把「松手」当成点击传给扇区（会误钉住某一格）。 */
+    if(DRAG.moved > 5){
+      swallowClick = true;
+      setTimeout(function(){ swallowClick = false; }, 350);
+    }
+  }
+
+  (function bindDrag(){
+    var host = document.querySelector(".disc");
+    if(!host || !window.PointerEvent) return;
+    host.addEventListener("pointerdown", onDown, { passive:false });
+    host.addEventListener("pointermove", onMove, { passive:false });
+    host.addEventListener("pointerup", onUp);
+    host.addEventListener("pointercancel", onUp);
+    document.addEventListener("click", function(e){
+      if(swallowClick){ e.stopPropagation(); e.preventDefault(); swallowClick = false; }
+    }, true);
+  })();
+
+
+  /* 只有手机才露按钮。电脑（含触屏本）UA 不命中，一行都不碰，跟以前完全一样。 */
+  (function boot(){
+    var ua = navigator.userAgent || "";
+    var phone = /Android|iPhone|iPod|HarmonyOS|Mobile\/|MiuiBrowser/i.test(ua) || isIOS(ua);
+    if(!phone || !("DeviceOrientationEvent" in window) || !btn) return;
+    btn.hidden = false;
+    setSt("off");
+  })();
+
+  return {
+    repaint: function(){ apply(S.rot); },
+    /* 调试与截图用：把盘直接摆到某个角度，不走平滑 */
+    set: function(deg){ S.target = S.rot = deg; apply(deg); },
+    reset: function(){ S.target = 0; S.rot = 0; apply(0); },
+    get rot(){ return S.rot; },
+    get live(){ return S.live; }
+  };
+})();
+
+
+/* 选中外环时，顺手列出这一方里装着哪几个时辰 */
+function dirPairBlock(k){
+  var hs = MAP[k] || [];
+  if(!hs.length) return "";
+  return '<div class="sec"><h3>这一方里的时辰</h3><ul>'+
+    hs.map(function(hk){
+      var s = HOUR[hk];
+      return '<li class="n"><span style="color:'+toneOf(s.tone)+';font-weight:500">'+esc(s.label[0])+'</span>　'+esc(s.label[1])+'</li>';
+    }).join("")+'</ul></div>';
+}
+/* 选中内环时，顺手指出它归在哪一方 */
+function hourPairBlock(k){
+  var dk = dirOfHour(k); if(!dk) return "";
+  var s = DIR[dk];
+  return '<div class="sec"><h3>这个时辰归在</h3><div class="pair">'+
+    '<div><b style="color:'+toneOf(s.tone)+'">'+esc(s.label[0])+'</b>　'+esc(s.label[1])+'　'+esc(s.label[3])+'</div>'+
+    '<div>'+esc(s.detail.verdict.split("。")[0] + "。")+'</div>'+
+    '</div></div>';
+}
+
+/* 三合一表点开后：这一条要同时给出「时辰」和「方位」两边的说法 */
+function taskDetail(t){
+  var hi = HOUR[t.hours[0]], di = DIR[t.dir];
+  var hs = t.hours.map(function(k){ return HOUR[k].label[0]; }).join(" / ");
+  return {
+    name: t.name,
+    meta: "时辰：" + hs + "　|　方位：" + di.label[0],
+    tag: t.slot,
+    verdict: hi.detail.verdict.split("。").slice(0,2).join("。") + "。" + di.detail.verdict.split("。")[0] + "。",
+    good: hi.detail.good.slice(0,4).concat(di.detail.good.slice(0,3)),
+    bad:  hi.detail.bad.slice(0,3).concat(di.detail.bad.slice(0,2)),
+    warn: hi.detail.warn + "　" + di.detail.warn,
+    evi:  hi.detail.evi.slice(0,2).concat(di.detail.evi.slice(0,2))
+  };
+}
+
+var pinned = null;        /* {kind:"dir"|"hr", key} 或 "task" */
+var pinnedIndex = -1;
+
+/* 点亮规则：只亮「点中的那些格」，其余一律压暗。
+   dirKeys / hourKeys 是本次要点亮的键数组；两环不互相带亮 —— 鼠标压到哪一格，
+   就只有那一格亮（关联信息改由右侧文字面板说，不再靠颜色铺一大块）。            */
+function paintLit(dirKeys, hourKeys){
+  var pin = document.querySelectorAll(".sector, .acc, .lb");
+  for(var i = 0; i < pin.length; i++){
+    var p = pin[i], kind = p.getAttribute("data-kind"), key = p.getAttribute("data-key");
+    var hit = (kind === "dir") ? (dirKeys.indexOf(key) > -1) : (hourKeys.indexOf(key) > -1);
+    p.classList.remove("active","dim");
+    p.classList.add(hit ? "active" : "dim");
+  }
+}
+function paintCards(activeIndex){
+  var cards = document.querySelectorAll(".tlcard");
+  for(var i = 0; i < cards.length; i++) cards[i].classList.toggle("active", i === activeIndex);
+}
+function clearAll(){
+  var all = document.querySelectorAll(".sector, .acc, .lb");
+  for(var i = 0; i < all.length; i++) all[i].classList.remove("active","dim");
+  paintCards(-1);
+}
+function showHub(){ pinned = null; pinnedIndex = -1; clearAll(); renderDetail(HUB.detail, HUB.tone); }
+function hoverDir(k){
+  paintLit([k], []);                       /* 只亮这一个方位，不牵连内环那几个时辰 */
+  renderDetail(DIR[k].detail, DIR[k].tone, dirPairBlock(k));
+}
+function hoverHour(k){
+  paintLit([], [k]);                       /* 只亮这一个时辰，不牵连它所属的整个方位 */
+  renderDetail(HOUR[k].detail, HOUR[k].tone, hourPairBlock(k));
+}
+function hoverTask(i){
+  var t = TASKS[i];
+  paintLit([t.dir], t.hours);              /* 只有底部择时表这一种是「一条对多格」 */
+  paintCards(i);
+  renderDetail(taskDetail(t), t.tone);
+}
+
+/* 绑定：两环的扇区与文字，共用一套逻辑 */
+function bindSectors(){
+  var sel = document.querySelectorAll(".sector, .lb");
+  for(var i = 0; i < sel.length; i++){
+    (function(p){
+      if(p.__sb) return; p.__sb = 1;
+      var kind = p.getAttribute("data-kind"), key = p.getAttribute("data-key");
+      p.addEventListener("mouseenter", function(){
+        if(TOUCH || pinned) return;
+        window.__pickedByClick = false;
+        if(kind === "dir") hoverDir(key); else hoverHour(key);
+      });
+      p.addEventListener("mouseleave", function(){
+        if(TOUCH || pinned) return;
+        clearAll(); renderDetail(HUB.detail, HUB.tone);
+      });
+      p.addEventListener("click", function(){
+        if(pinned && pinned.kind === kind && pinned.key === key){ showHub(); return; }
+        window.__pickedByClick = true;
+        pinned = { kind:kind, key:key }; pinnedIndex = -1;
+        if(kind === "dir") hoverDir(key); else hoverHour(key);
+      });
+    })(sel[i]);
+  }
+}
+
+document.getElementById("hubcircle").addEventListener("click", showHub);
+document.getElementById("hubtext").addEventListener("click", showHub);
+
+/* ---- 底部三合一表 ---- */
+function renderTaskGrid(){
+  var grid = document.getElementById("tlgrid");
+  grid.innerHTML = TASKS.map(function(t, i){
+    var _nfb = ["这一段气是通的，办完就走","挑这一段用，别耗着","按事情挑时辰，别按方位名字挑","这一段能用，成不成看事本身","气顺不等于事成，办完就撤","留一点余地，别把话压满"];
+    var note = t.note || _nfb[i % _nfb.length];
+    if(note.length > 32) note = note.slice(0, 32) + "…";
+    return '<div class="tlcard" data-idx="'+i+'">'+
+      '<div class="tltime">'+esc(t.name)+'</div>'+
+      '<div class="tlword" style="color:'+toneOf(t.tone)+'">'+esc(t.slot)+'</div>'+
+      '<div class="tlnote">'+esc(note)+'</div>'+
+    '</div>';
+  }).join("");
+  var cards = grid.querySelectorAll(".tlcard");
+  for(var i = 0; i < cards.length; i++){
+    (function(card, idx){
+      card.addEventListener("click", function(){
+        if(pinned === "task" && pinnedIndex === idx){ showHub(); return; }
+        window.__pickedByClick = true;
+        pinned = "task"; pinnedIndex = idx;
+        hoverTask(idx);
+      });
+    })(cards[i], i);
+  }
+}
+
+/* ===== 一屏原型：详情渲染覆盖（不改数据区、不改几何） ===== */
+var el = document.getElementById('panel');
+function h_li(a, k){ return (a||[]).map(function(x){ return '<li class="'+k+'">'+esc(x)+'</li>'; }).join(''); }
+function h_sec(t, inner, cls){ return '<div class="sec'+(cls?' '+cls:'')+'"><h3>'+t+'</h3>'+inner+'</div>'; }
+function h_one(x, cls){ return x ? '<div class="one'+(cls?' '+cls:'')+'">'+esc(x)+'</div>' : ''; }
+
+/* 四派各自结论：每派一条，允许互相矛盾；有分歧就单独标出来，不做合并抹平 */
+function h_views(d){
+  if(!d || !d.views || !d.views.length) return '';
+  var rows = d.views.map(function(v){
+    var st = v.st || '';
+    return '<div class="vw"'+(st?' data-st="'+esc(st)+'"':'')+'>'+
+             '<span class="s">'+esc(v.s)+'</span>'+
+             '<span class="t">'+esc(v.t)+'</span>'+
+           '</div>';
+  }).join('');
+  var diff = d.diff
+    ? '<div class="vw-split"><b>分歧就在这儿：</b>'+esc(d.diff)+'</div>' : '';
+  var agree = d.agree
+    ? '<div class="vw-merge"><b>四派同指：</b>'+esc(d.agree)+'</div>' : '';
+  return '<div class="sec views-block"><h3>四派各自结论（各说各的，不合并）</h3>'+
+           '<div class="vw-wrap">'+rows+diff+agree+'</div>'+
+         '</div>';
+}
+
+function detailHTML(d, tone, extra, cols){
+  if(!d) return '';
+  cols = cols || 3;
+  var cells = [];
+  if(d.good && d.good.length) cells.push(h_sec('适宜做什么', '<ul>'+h_li(d.good,'g')+'</ul>'));
+  if(d.bad && d.bad.length)   cells.push(h_sec('不适宜做什么', '<ul>'+h_li(d.bad,'b')+'</ul>'));
+  if(d.time)   cells.push(h_sec('最佳时辰', h_one(d.time)));
+  if(d.place)  cells.push(h_sec('去什么类型的地方', h_one(d.place)));
+  if(d.warn)   cells.push(h_sec('要防什么', h_one(d.warn,'warn')));
+  if(d.nature) cells.push(h_sec('这一格的性质', h_one(d.nature)));
+  if(extra)    cells.push(extra);
+  var n = cells.length, rem = n % cols;
+  if(rem) cells[n-1] = cells[n-1].replace('class="sec', 'class="sec fill'+(cols-rem+1));
+  var evi = (d.evi && d.evi.length)
+    ? '<div class="sec evi-block"><h3>命理依据</h3><div class="evi">'+d.evi.map(function(x){return '<div>'+esc(x)+'</div>';}).join('')+'</div></div>'
+    : '';
+  return '<div class="dhead">'+
+      '<h2 class="pname">'+esc(d.name)+'</h2>'+
+      '<span class="tag" style="background:'+toneBgOf(tone)+';color:'+toneOf(tone)+'">'+esc(d.tag)+'</span>'+
+    '</div>'+
+    '<p class="pmeta">'+esc(d.meta)+'</p>'+
+    '<p class="verdict" id="vd">'+esc(d.verdict)+'</p>'+
+    h_views(d)+
+    '<div class="dgrid">'+cells.join('')+evi+'</div>';
+}
+
+function renderDetail(d, tone, extra){
+  window.__curDetail = d;
+  el.innerHTML = detailHTML(d, tone, extra);
+  if(window.__afterDetail) window.__afterDetail();
+};
+
+/* 顶栏与页脚 */
+function renderHeader(){
+document.getElementById('h1').innerHTML = '<b>'+esc(CHART.date)+'</b> '+esc(CHART.weekday||'')+' · '+esc(CHART.question||'问事');
+document.getElementById('sub').innerHTML =
+  '<i class="k">外环 方位 · 8</i><i class="k">内环 时辰 · 12</i><i class="k">子北午南</i>'+
+  (CHART.ben ? '<i class="k">卦</i>'+esc(CHART.ben.name)+(CHART.bian?' <em>→</em> '+esc(CHART.bian.name):' <em>（六爻安静）</em>') : '<i class="k">日课</i>'+esc(CHART.hubTitle||'')) +
+  '<i class="k">四柱</i>'+esc(CHART.pillars)+
+  '<i class="k">空亡</i>'+esc(CHART.kong);
+var noteEl = document.getElementById('hdnote');
+if(noteEl) noteEl.innerHTML = '<b>'+esc(CHART.verdictLine||'')+'</b><span class="sep">·</span>'+esc(CHART.bestWindow||'');
+document.getElementById('foot').innerHTML = String(CHART.foot||'').replace(/<br\s*\/?>/g,' · ');
+document.getElementById('tlhead').textContent = '事项 × 时辰 × 方位 · 三合一择时表';
+
+/* 顶部刻度文案：外环/内环说明放进圆盘角落徽标 */
+document.getElementById('svgtitle').textContent = CHART.date + ' ' + (CHART.question||'问事') + '双环合参盘';
+}
+renderHeader();
+
+/* 默认态用新排版重画一遍（模板原本已画过一次旧版） */
+renderDetail(HUB.detail, HUB.tone);
+
+
+/* ---- 详情区字号二分自适应：能放下就放下，放不下才折判语 ---- */
+function tryFit(){
+  var el = document.getElementById('panel');
+  if(!el) return true;
+  var MINF = narrow ? 12.5 : 10.2, MAXF = narrow ? 20.0 : 18.0;
+  /* 第 1 次重排：在最小字号下同时读出可视高与内容高（两个读合并成一次重排） */
+  el.style.setProperty('--dfs', MINF + 'px');
+  var cH = el.clientHeight, hMin = el.scrollHeight;
+  if(hMin > cH + 1){
+    /* 最小字号都装不下 → 直接交给外面的 clamp 逐档收紧，不再二分 */
+    return false;
+  }
+  /* 面积 ∝ 字号² ⇒ 目标字号 = 最小字号 × √(可视高 / 内容高) */
+  var fs = MINF * Math.sqrt(cH / Math.max(hMin, 1));
+  if(fs > MAXF) fs = MAXF;
+  el.style.setProperty('--dfs', (Math.floor(fs * 10) / 10) + 'px');
+  /* 第 2 次重排：验证估算。估过头就退回最小字号（那个我们已经验证过装得下） */
+  if(el.scrollHeight > cH + 1) el.style.setProperty('--dfs', MINF + 'px');
+  return true;
+}
+function fitPanel(){
+  var vd = document.getElementById('vd');
+  if(vd && vd.dataset.forced === '1'){ tryFit(); return; }   /* 用户主动展开 → 允许滚动 */
+  if(tryFit()){ if(window.__moreBtn) window.__moreBtn.hidden = true; return; }
+  if(!vd) return;
+  for(var lines = 9; lines >= 5; lines--){                    /* 还是装不下 → 判语逐档收紧 */
+    vd.classList.add('clamp');
+    vd.style.setProperty('-webkit-line-clamp', String(lines));
+    if(tryFit()) break;
+  }
+  if(window.__moreBtn) window.__moreBtn.hidden = false;
+}
+
+/* ---- 每次换格：重挂抽屉把手 + 折页按钮 + 重算字号 ---- */
+window.__afterDetail = function(){
+  var el = document.getElementById('panel');
+  var hd = document.createElement('div');
+  hd.className = 'sheethead';
+  var g = document.createElement('div');
+  g.className = 'grab';
+  hd.appendChild(g);
+  var cl = document.createElement('button');
+  cl.className = 'sheetclose'; cl.type = 'button'; cl.textContent = '收起';
+  cl.setAttribute('aria-label', '收起详情，回到盘面总纲');
+  hd.appendChild(cl);
+  el.insertBefore(hd, el.firstChild);
+
+  var vd = document.getElementById('vd');
+  if(vd){
+    vd.classList.remove('clamp');
+    el.classList.remove('full');
+    delete vd.dataset.forced;
+    vd.style.removeProperty('-webkit-line-clamp');
+    var b = document.createElement('button');
+    b.className = 'more'; b.type = 'button'; b.textContent = '展开全文 ↓'; b.hidden = true;
+    b.addEventListener('click', function(){
+      if(vd.dataset.forced === '1'){
+        delete vd.dataset.forced; el.classList.remove('full');
+        vd.classList.add('clamp'); b.textContent = '展开全文 ↓';
+      } else {
+        vd.dataset.forced = '1'; el.classList.add('full');
+        vd.classList.remove('clamp'); b.textContent = '收起 ↑';
+      }
+      fitPanel();
+    });
+    vd.parentNode.insertBefore(b, vd.nextSibling);
+    window.__moreBtn = b;
+  }
+  if(narrow && window.__pickedByClick){
+    if(window.__curDetail !== HUB.detail){
+      if(!el.classList.contains('expanded')){ el.classList.add('tall'); }
+    } else { el.classList.remove('tall','expanded'); }
+  }
+  fitPanel();
+};
+
+document.getElementById('panel').addEventListener('transitionend', function(e){
+  if(e.propertyName === 'height') fitPanel();
+});
+window.addEventListener('resize', function(){ fitPanel(); });
+window.addEventListener('orientationchange', function(){ setTimeout(fitPanel, 320); });
+
+/* 首屏重画一遍，走带自适应字号的新排版 */
+renderDetail(HUB.detail, HUB.tone);
+
+/* ============================================================
+   手机 / 窄屏：圆盘换「短标签」profile + 详情做底部抽屉
+   桌面 900 单位 viewBox 缩到 390px 时，环里那四行字只有 4~5px，
+   糊成一片。所以窄屏只留「方位名 / 时辰名 + 评级」两行并放大，
+   长文案全部交给下面的抽屉。
+   ============================================================ */
+var narrow = window.innerWidth <= 860;
+var sheet = document.getElementById('panel');
+
+function esc2(s){ return esc(s == null ? '' : s); }
+function txt(x, y, fs, fill, t, w){
+  if(!t) return '';
+  return '<text x="'+x+'" y="'+y+'" font-size="'+fs+'"'+(w?' font-weight="'+w+'"':'')+' fill="'+fill+'">'+esc2(t)+'</text>';
+}
+
+function renderRingLabels(short){
+  var dl = '', hl = '', i;
+  for(i = 0; i < ORDER8.length; i++){
+    var k = ORDER8[i], s = DIR[k]; if(!s || !s.label) continue;
+    var c = RAINBOW[s.tone] || RAINBOW.gray, a = pt(s.mid, GEO.dir.labelR - (short ? 6 : 0));
+    var g = '<g class="lb" data-kind="dir" data-key="'+k+'">';
+    if(short){
+      g += txt(a[0], a[1] - 5, 44, c, String(s.label[0]).split(' · ')[0], '500');
+      g += txt(a[0], a[1] + 36, 26, 'var(--tx2)', ({good:'首选',ok:'可用',warn:'留意',bad:'避开',gray:'落空'})[s.tone] || '');
+    } else {
+      var ys = [a[1]-23, a[1]-8, a[1]+8, a[1]+23], fs = [13.5, 12, 12, 11.5];
+      var co = [c, c, 'var(--tx)', 'var(--tx2)'], wt = ['500','500','',''];
+      for(var j = 0; j < s.label.length; j++)
+        g += txt(a[0], ys[j], fs[j], co[j], s.label[j], wt[j]);
+    }
+    dl += g + '</g>';
+  }
+  for(i = 0; i < ORDER12.length; i++){
+    var hk = ORDER12[i], h = HOUR[hk]; if(!h || !h.label) continue;
+    var hc = RAINBOW[h.tone] || RAINBOW.gray, b = pt(h.mid, GEO.hour.labelR);
+    var gh = '<g class="lb" data-kind="hr" data-key="'+hk+'">';
+    if(short){
+      gh += txt(b[0], b[1] - 5, 44, hc, String(h.label[0]).split(' · ')[0], '500');
+      gh += txt(b[0], b[1] + 33, 27, 'var(--tx2)', ({good:'首选',ok:'可用',warn:'留意',bad:'避开',gray:'落空'})[h.tone] || '');
+    } else {
+      var hy = [b[1]-16, b[1], b[1]+16], hf = [12, 11, 11], hco = [hc, hc, 'var(--tx2)'], hwt = ['500','500',''];
+      for(var m = 0; m < h.label.length; m++)
+        gh += txt(b[0], hy[m], hf[m], hco[m], h.label[m], hwt[m]);
+    }
+    hl += gh + '</g>';
+  }
+  document.getElementById('dirlabels').innerHTML = dl;
+  document.getElementById('hourlabels').innerHTML = hl;
+  bindRing();
+  /* 标签是重新生成的，反旋 transform 跟着丢了；盘正转着就必须补回来，
+     否则换日期/切窗口尺寸之后文字会突然歪掉。 */
+  if(window.CM && CM.repaint) CM.repaint();
+}
+
+/* 替换掉标签节点后，事件要重新挂（扇区自己带过，就不重复挂） */
+function bindRing(){
+  var nodes = document.querySelectorAll('.lb');
+  for(var i = 0; i < nodes.length; i++){
+    (function(p){
+      if(p.__bound) return; p.__bound = 1;
+      var kind = p.getAttribute('data-kind'), key = p.getAttribute('data-key');
+      p.addEventListener('mouseenter', function(){
+        if(TOUCH || pinned) return;
+        if(kind === 'dir') hoverDir(key); else hoverHour(key);
+      });
+      p.addEventListener('mouseleave', function(){
+        if(TOUCH || pinned) return;
+        clearAll(); renderDetail(HUB.detail, HUB.tone);
+      });
+      p.addEventListener('click', function(){
+        if(pinned && pinned.kind === kind && pinned.key === key){ showHub(); return; }
+        pinned = { kind: kind, key: key }; pinnedIndex = -1;
+        if(kind === 'dir') hoverDir(key); else hoverHour(key);
+      });
+    })(nodes[i]);
+  }
+}
+
+/* 圆心：坐标全部来自 hubLayout（窄屏/桌面两套 profile），本函数只负责序列化。
+   别在这里写死坐标——写了就绕过了 check-panel 的圆心容身校验。 */
+function renderHubText(short){
+  var L = hubLayout(short), h = '', i, t, r;
+  for(i = 0; i < L.texts.length; i++){
+    t = L.texts[i];
+    h += '<text x="'+t.x+'" y="'+t.y+'" font-size="'+t.fs+'"'+
+         (t.w ? ' font-weight="'+t.w+'"' : '')+
+         (t.ls ? ' letter-spacing="'+t.ls+'"' : '')+
+         ' fill="'+t.fill+'">'+esc2(t.t)+'</text>';
+  }
+  for(i = 0; i < L.rects.length; i++){
+    r = L.rects[i];
+    if(r.line){
+      h += '<line x1="'+r.x+'" y1="'+r.y+'" x2="'+(r.x+r.w)+'" y2="'+r.y+'" stroke="'+r.fill+'" stroke-width="'+r.h+'"/>';
+    } else {
+      h += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" rx="'+(r.h/2)+'" fill="'+r.fill+'" fill-opacity="'+r.op+'"/>';
+    }
+  }
+  document.getElementById('hubtext').innerHTML = h;
+}
+
+/* 抽屉两档 + 点空白收回 */
+(function(){
+  sheet.addEventListener('click', function(e){
+    /* 交给 DRAG_JS 的轻点逻辑 */
+  });
+  var disc = document.querySelector('.disc');
+  if(disc) disc.addEventListener('click', function(e){
+    if(!narrow) return;
+    if(e.target.closest && e.target.closest('.sector,.lb')) return;
+    sheet.classList.remove('tall','expanded');
+    showHub();
+  });
+})();
+
+function applyProfile(){
+  narrow = window.innerWidth <= 860;
+  renderHubText(narrow);
+  renderRingLabels(narrow);
+  fitPanel();
+}
+
+/* ---- 日期切换：原地换日，不 reload ----
+   ★ 为什么不用 location.reload()：手机浏览器（尤其 file:// 下）经常把 reload 忽略掉，
+     按钮点了没反应；而且 reload 要把 3.4MB 重新解压一遍。
+     365 天本来就在内存里，直接换引用 + 重画即可，切换是瞬时的。 */
+(function(){
+  var prev = document.getElementById('dbPrev'), next = document.getElementById('dbNext'),
+      bar = document.getElementById('dbDate'), pick = document.getElementById('dbPick'),
+      hint = document.getElementById('dbHint'),
+      todayBtn = document.getElementById('dbToday');
+  var i = 0;
+
+  function updateBar(){
+    i = DAY_INDEX[_selDate];
+    bar.textContent = _selDate + ' ' + (CHART.weekday || '') + '　' + (i + 1) + '/' + DAY_ORDER.length;
+    /* #dbPick 现在是个 button（原来用原生 input[type=date]，夸克上点不开，见注释 10）。
+       value/min/max 留着只为兼容：value 仍记着当前日期，test-ui 的越界用例靠它。 */
+    pick.value = _selDate;
+    pick.min = DAY_ORDER[0]; pick.max = DAY_ORDER[DAY_ORDER.length - 1];
+    prev.disabled = (i <= 0);
+    next.disabled = (i >= DAY_ORDER.length - 1);
+    var _inRange = _todayISO >= DAY_ORDER[0] && _todayISO <= DAY_ORDER[DAY_ORDER.length - 1];
+    todayBtn.disabled = !_inRange || _selDate === _todayISO;
+    var _hd = (typeof HALO === "object" && HALO && HALO[_selDate]) ? HALO[_selDate].n : (_birthMMDD && _selDate.slice(5) === _birthMMDD ? "生日" : "");
+    var _tail = (_selDate === _todayISO ? "\u3000·\u3000就是今天" : "") + (_hd ? "\u3000·\u3000" + _hd : "");
+    hint.textContent = (window.innerWidth <= 860 ? (DAY_ORDER.length + ' 天') : ('共 ' + DAY_ORDER.length + ' 天 　·　' + DAY_ORDER[0] + ' → ' + DAY_ORDER[DAY_ORDER.length - 1])) + _tail;
+  }
+
+  /* ── 换日滑动：真·相册（两页贴着一起走）──
+     用户 2026-09-17 反馈：「你做的还行，就是没有那种『退出去』的感觉」。
+     根因不是动画做得不对，是**只有一层**：相册/小说左右滑的本质是「相邻两页贴在一条轨道上一起走」，
+     只有新页进场、没有旧页退场，就永远不像。
+     做法：换日**之前**把当前这一屏克隆一份当「退场层」；渲染完新内容后，把新内容摆到对面屏外，
+     然后两层一起走一整屏。
+     ★ 两条硬约束（和之前一样，都不能违）：
+       ① **换日必须仍然同步完成**，动画只是叠加上去的一层。
+          test-ui 的 T20 是「for 100 次 click()」同步连点，最后比日期。
+          任何把换日推进 setTimeout / requestAnimationFrame 的做法都会让它少 99 天。
+          （这段注释在模板字符串里，**不能出现反引号**，会把字符串截断 —— 踩过一次。）
+       ② **动画目标不能是 #panel 的祖先**。移动端抽屉是 position:fixed，
+          祖先一旦有 transform，包含块就变成那个祖先 → 抽屉会跑到 .main 的底部去。
+          所以这里逐元素点名，抽屉在移动端直接排除。
+       ③ **两层的 fill 不是一回事**（2026-09-17 补，代价是一次「闪一下」）：
+          进场层用 backwards（只要起点的位置），退场层必须用 forwards（要终点的位置）。
+          退场层若也用 backwards，动画一结束效果撤销、它瞬间弹回原位 ——
+          一张整屏的旧页盖在新页上，直到被删掉为止。详见 pageSlide 里的注释。 */
+  var _ptLast = 0, _ptAnims = [], _pgWrap = null;
+
+  /* 这一轮滑哪些块。规则只有一条：**屏幕上看得见的，都算这一页**。
+     ★ 2026-09-17 修正：之前窄屏只滑 .hd 和 .disc，理由是「.tl 和 .status 在手机上看不见」。
+       这个前提有一半是错的 —— .tl（底部择时卡）在手机上是看得见的，只有 .status 真的被
+       display:none 了。于是在手机上会看到：圆盘在滑，底下那排择时卡却在点下去的那一瞬间
+       就已经换成新的一天了。抽屉（#panel，窄屏下是 position:fixed 的底部卡片，占小半屏）
+       同理，而且更显眼 —— 它等于是在滑动过程中「硬切」了一下。
+       现在改成：所有「量出来有尺寸」的块都进滑动，零尺寸的（display:none 的）自动跳过。
+       抽屉能被 animate 吗 —— 能。那条约束是「祖先不能有 transform」，它自己带 transform 没问题。 */
+  function pageEls(){
+    var sels = ['.hd', '.disc', '.tl', '.status', '#panel'], out = [], k, e, r;
+    for(k = 0; k < sels.length; k++){
+      e = document.querySelector(sels[k]);
+      if(!e) continue;
+      r = e.getBoundingClientRect();
+      if(r.width < 2 || r.height < 2) continue;      /* display:none / 零尺寸 → 没得滑 */
+      out.push(e);
+    }
+    return out;
+  }
+
+  /* 退场层的克隆体要「中立化」，否则会污染页面与测试：
+     · id=panel 必须去掉 —— 它是唯一被测试用作用域查询过的 id（#panel .more / #panel .grab），
+       留着就出现两份。**其它 id 必须留着**：模板里唯一一条按 id 写样式的规则是 #vd{}，
+       详情卡那几句折行全靠它，去掉退场层那张卡的字就散了。
+     · SVG 子树里的 class 全抹掉 —— 那些 class 只管 cursor 和 transition，长相全靠行内属性；
+       不抹的话 document.querySelectorAll('.sector') 会从 20 变成 40，直接污染测试。
+       外层 .hd/.disc/.tl/.status 的 class 必须留着（排版全靠 CSS 类）。
+     · 克隆体整体 pointer-events:none + aria-hidden，并且把可聚焦元素踢出 Tab 顺序。 */
+  function pgNeutralize(node){
+    if(node.getAttribute && node.getAttribute('id') === 'panel') node.removeAttribute('id');
+    /* 只遍历「带 class 的」元素（整棵 SVG 有一千多个节点，全走一遍没必要） */
+    var cls = node.querySelectorAll('[class]'), i, el;
+    for(i = 0; i < cls.length; i++){
+      el = cls[i];
+      if(el.ownerSVGElement || el.tagName.toLowerCase() === 'svg') el.removeAttribute('class');
+    }
+    var f = node.querySelectorAll('button, input, a, [tabindex]');
+    for(i = 0; i < f.length; i++) f[i].setAttribute('tabindex', '-1');
+  }
+
+  /* 收退场层。传参 = 只收指定的那一个。
+     ★ 为什么必须能指定：收尾走的是「动画播完的 finished 回调」，
+     而那个回调是异步的 —— 万一在它触发之前用户又翻了一次，_pgWrap 已经换成新的了，
+     不带参数地删就会把**新一层**误删掉（于是新那一次滑动彻底没有退场层）。 */
+  function pgDrop(w){
+    w = w || _pgWrap;
+    if(!w) return;
+    if(w === _pgWrap) _pgWrap = null;
+    try{ if(w.parentNode) w.parentNode.removeChild(w); }catch(e){}
+  }
+
+  function pgGhost(els){
+    pgDrop();
+    if(!els || !els.length) return false;
+    /* ★ 先把所有 rect 一次读完再建 DOM —— 边读边 append 会让每一次读都强制重排 */
+    var box = [], i;
+    for(i = 0; i < els.length; i++){
+      var r = els[i].getBoundingClientRect();
+      if(r.width < 2 || r.height < 2) continue;
+      box.push({ el: els[i], x: r.left, y: r.top, w: r.width, h: r.height });
+    }
+    if(!box.length) return false;
+    var wrap = document.createElement('div');
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.setAttribute('style', 'position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;' +
+      'pointer-events:none;z-index:9000;-webkit-user-select:none;user-select:none');
+    for(i = 0; i < box.length; i++){
+      var b = box[i], c = b.el.cloneNode(true);
+      pgNeutralize(c);
+      c.setAttribute('style', 'position:absolute;margin:0;box-sizing:border-box;' +
+        'left:' + Math.round(b.x) + 'px;top:' + Math.round(b.y) + 'px;' +
+        'width:' + Math.round(b.w) + 'px;height:' + Math.round(b.h) + 'px;' +
+        (b.el.getAttribute('style') || ''));
+      wrap.appendChild(c);
+    }
+    if(!wrap.firstChild) return false;
+    document.body.appendChild(wrap);
+    _pgWrap = wrap;
+    return true;
+  }
+
+  function pageSlide(dir, els){
+    var k;
+    for(k = 0; k < _ptAnims.length; k++){ try{ _ptAnims[k].cancel(); }catch(e){} }
+    _ptAnims = [];
+    if(!dir || !els || !els.length){ pgDrop(); return; }
+    var W = Math.max(window.innerWidth, 320) * PAGETURN.shift;
+    var dx = -dir * W;                       /* 轨道往哪边挪：dir=+1（下一页）就是往左 */
+    /* 进场层（新内容）：fill 只留 backwards。
+       它只为「暂停待命」那一段服务 —— 让新页在第一帧就停在屏外，不会出现在画面中间。
+       终点不保留：这层动画的终点恰好等于元素的自然状态（无 transform），
+       撤销即归位，所以结束那一刻不会有任何位移。 */
+    var optIn = { duration: PAGETURN.ms, easing: PAGETURN.ease, fill: 'backwards' };
+    /* 退场层（旧页的克隆）：必须 fill:'forwards'。
+       ★★ 2026-09-17「闪一下」的根因就在这一行：
+         之前两层都用 backwards。backwards 只保留起点，动画一结束效果立刻撤销，
+         退场层于是**瞬间从屏外弹回原位**（transform 归零）—— 那是一张整屏的旧页，
+         正好压在新页上，而且会一直压到 setTimeout 里的 pgDrop 才消失（ms+80 那么久）。
+         用户看到的就是：新页滑到位 → 旧页蹦回来盖住 → 再切成新页。
+         forwards 让它停在屏外（相册里旧页本来就该退到看不见的地方），
+         从此删掉它不产生任何视觉变化 —— 收场必须是「零像素差」的。
+       另一个前提：行程必须够一整屏，否则它停下的位置还在视口里。所以只有
+       shift >= 1（整屏）时才建退场层，见 switchDay。 */
+    var optOut = { duration: PAGETURN.ms, easing: PAGETURN.ease, fill: 'forwards' };
+    var mine = [], gw = _pgWrap, gout = null;
+    /* 新内容先摆到对面屏外，滑进来 */
+    for(k = 0; k < els.length; k++){
+      try{
+        var a = els[k].animate([{ transform: 'translateX(' + (-dx) + 'px)' }, { transform: 'translateX(0)' }], optIn);
+        a.pause(); mine.push(a); _ptAnims.push(a);
+      }catch(e){}
+    }
+    /* 退场层从原位滑出去 */
+    if(gw){
+      try{
+        gout = gw.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + dx + 'px)' }], optOut);
+        gout.pause(); mine.push(gout); _ptAnims.push(gout);
+      }catch(e){ gout = null; }
+    }
+    if(!mine.length){ pgDrop(gw); return; }
+    /* ★★ 关键的一步：**先暂停停住，下一帧再放**。
+       为什么非这样不可：换日这一句本身有 40ms 上下的同步渲染（手机上要 3~5 倍），
+       如果动画在那一刻就开始计时，等浏览器真正画出第一帧时它已经走了 15%~50% ——
+       用户看到的是「内容先跳到一半、再从那儿滑」，也就是那个「卡一下」。
+       fill:backwards 让暂停期间直接显示起始帧，所以不会闪；
+       下一帧 play，动画的 0 点正好落在换日那一帧的画面上，走起来才连贯。 */
+    var _go = function(){ for(var q = 0; q < mine.length; q++){ try{ mine[q].play(); }catch(e){} } };
+    if(window.requestAnimationFrame) requestAnimationFrame(_go); else _go();
+    /* 收场：等退场层自己走完再删。此刻它正停在屏外（forwards 保住了那个位置），
+       所以删它跟不删，屏幕上是一模一样的。 */
+    if(gout && gout.finished){ try{ gout.finished.then(function(){ pgDrop(gw); }, function(){}); }catch(e){} }
+    /* 兜底：万一 finished 因为标签页被挂起之类的原因没触发，也不能留一个永久层。
+       故意放得很松（3 倍时长）—— 唯一的要求是「别删早了」，早了反而会闪。 */
+    setTimeout(function(){ pgDrop(gw); }, PAGETURN.ms * 3 + 500);
+  }
+
+  /* 原地换日：先把旧页克隆下来 → 换数据引用 → 重画两环/择时表/事件 → 回圆心 → 两层一起滑 */
+  function switchDay(d){
+    if(!d || DAY_INDEX[d] == null) return;
+    if(!DAYS[d]){ loadDay(d).then(function(){ switchDay(d); }, function(){}); return; }
+    var _prev = _selDate, _d = DAYS[d], _pi = DAY_INDEX[_prev];
+    var _dir = _pi == null ? 0 : (DAY_INDEX[d] > _pi ? 1 : (DAY_INDEX[d] < _pi ? -1 : 0));
+    /* 手速极快（连点、连划）时不做动画 —— 只跳过动画，**不跳过换日** */
+    var _fast = (Date.now() - _ptLast) < (PAGETURN.ms + 60);
+    var _els = null;
+    if(PAGETURN.on && _dir && !_fast){
+      /* ① 必须在渲染之前克隆 —— 渲染一跑，旧页的 DOM 就没了 */
+      _els = pageEls();
+      _ptLast = Date.now();
+      /* 只有「整整一屏的行程」才建退场层。退场层的收场方式是「滑出屏外，然后删掉」，
+         行程不到一屏时它会停在视口里，删之前那一刻就是一张盖住新页的旧图。
+         shift < 1 就走纯推入（新页自己滑进来），没有旧页退场。 */
+      if(PAGETURN.shift >= 0.999 && !pgGhost(_els)) _els = null;
+    }
+    CHART = _d.chart; DIR = _d.dir; HOUR = _d.hour; TASKS = _d.tasks; HUB = _d.hub;
+    _selDate = d;
+    pinned = null; pinnedIndex = -1;
+    renderAll();
+    bindRing();
+    clearAll();
+    var sh = document.getElementById('panel');
+    sh.classList.remove('tall','expanded');
+    applyProfile();
+    /* 先设 __curDetail，否则 renderDetail 里「非圆心就自动展开抽屉」的判断会把抽屉撑高 */
+    window.__curDetail = HUB.detail;
+    renderDetail(HUB.detail, HUB.tone);
+    sh.classList.remove('tall','expanded');
+    updateBar();
+    try { history.replaceState(null, '', '#' + d); } catch(e){ location.hash = d; }
+    /* ② 换完了，两层一起滑 */
+    pageSlide(_els ? _dir : 0, _els);
+    prefetchNear(d);
+  }
+
+  function go(d){ if(d && DAY_INDEX[d] != null) switchDay(d); }
+
+  todayBtn.addEventListener('click', function(){ go(_todayISO); });
+  prev.addEventListener('click', function(){ go(DAY_ORDER[i - 1]); });
+  next.addEventListener('click', function(){ go(DAY_ORDER[i + 1]); });
+  pick.addEventListener('change', function(){ go(pick.value); });
+  document.addEventListener('keydown', function(e){
+    if(e.target && e.target.tagName === 'INPUT') return;
+    if(e.key === 'ArrowLeft')  go(DAY_ORDER[i - 1]);
+    if(e.key === 'ArrowRight') go(DAY_ORDER[i + 1]);
+  });
+
+  /* 左右滑动换日（手机）：横向位移够大、且不是竖滑（竖滑是滚详情）才认 */
+  var sx = 0, sy = 0, st = 0, track = false;
+  function inSheet(el){ return !!(el && el.closest && el.closest('#panel, #tlgrid, .tl')); }
+  document.addEventListener('touchstart', function(e){
+    if(e.touches.length !== 1 || inSheet(e.target)){ track = false; return; }
+    track = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY; st = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function(e){
+    if(!track) return; track = false;
+    var t = e.changedTouches && e.changedTouches[0]; if(!t) return;
+    var dx = t.clientX - sx, dy = t.clientY - sy;
+    if(Date.now() - st > 800) return;
+    if(Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx) * 0.7) return;
+    go(DAY_ORDER[dx > 0 ? i - 1 : i + 1]);
+  }, { passive: true });
+
+
+  /* ---- 自绘日期选择浮层（原生 date 控件在夸克上点不开，见构建期注释 10）---- */
+  var dcalW = null;
+  function dcalClose(){ if(dcalW) dcalW.classList.remove('on'); }
+  function dcalShift(step){
+    var cy = dcalW.getAttribute('data-y') * 1, cm = dcalW.getAttribute('data-m') * 1;
+    dcalMonth(cy, cm + step);
+  }
+  function dcalMonth(y, m){
+    var ys = DAY_ORDER[0], ye = DAY_ORDER[DAY_ORDER.length - 1];
+    var lo = (+ys.slice(0,4)) * 12 + (+ys.slice(5,7) - 1);
+    var hi = (+ye.slice(0,4)) * 12 + (+ye.slice(5,7) - 1);
+    var v = y * 12 + m;
+    if(v < lo) v = lo;
+    if(v > hi) v = hi;
+    dcalBuild(Math.floor(v / 12), v % 12);
+  }
+  function dcalBuild(y, m){
+    if(!dcalW){
+      dcalW = document.createElement('div');
+      dcalW.id = 'dcalWrap';
+      dcalW.innerHTML = '<div id="dcal">'
+        + '<div class="hd"><button type="button" data-nav="-1" aria-label="上个月">\u2039</button>'
+        + '<b></b>'
+        + '<button type="button" data-nav="1" aria-label="下个月">\u203a</button></div>'
+        + '<div class="wd"><span>\u65e5</span><span>\u4e00</span><span>\u4e8c</span><span>\u4e09</span>'
+        + '<span>\u56db</span><span>\u4e94</span><span>\u516d</span></div>'
+        + '<div class="gr"></div>'
+        + '<div class="ft"><span class="m"></span>'
+        + '<button type="button" data-today="1">\u56de\u5230\u4eca\u5929</button>'
+        + '<button type="button" data-close="1">\u5173\u95ed</button></div></div>';
+      document.body.appendChild(dcalW);
+      dcalW.addEventListener('click', function(e){
+        var el = e.target;
+        if(el === dcalW){ dcalClose(); return; }                 /* 点遮罩关掉 */
+        var b = null;
+        while(el && el !== dcalW){ if(el.tagName === 'BUTTON'){ b = el; break; } el = el.parentNode; }
+        if(!b || b.disabled) return;
+        var nav = b.getAttribute('data-nav');
+        if(nav){ dcalShift(nav === '-1' ? -1 : 1); return; }
+        if(b.getAttribute('data-today')){ dcalClose(); go(_todayISO); return; }
+        if(b.getAttribute('data-close')){ dcalClose(); return; }
+        var dd = b.getAttribute('data-d');
+        if(dd){ dcalClose(); go(dd); }
+      });
+    }
+    dcalW.setAttribute('data-y', y); dcalW.setAttribute('data-m', m);
+    dcalW.querySelector('b').textContent = y + ' \u5e74 ' + (m + 1) + ' \u6708';
+    var gr = dcalW.querySelector('.gr');
+    gr.innerHTML = '';
+    var lead = new Date(y, m, 1).getDay();
+    for(var k = 0; k < lead; k++) gr.appendChild(document.createElement('span'));
+    var dn = new Date(y, m + 1, 0).getDate();
+    for(var n = 1; n <= dn; n++){
+      var iso = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + n).slice(-2);
+      var bt = document.createElement('button');
+      bt.type = 'button'; bt.textContent = n; bt.setAttribute('data-d', iso);
+      if(!DAYS[iso]) bt.disabled = true;                          /* 365 天范围外置灰 */
+      if(iso === _selDate) bt.className = 'sel';
+      else if(iso === _todayISO) bt.className = 'td';
+      gr.appendChild(bt);
+    }
+    var ys = DAY_ORDER[0], ye = DAY_ORDER[DAY_ORDER.length - 1];
+    var loV = (+ys.slice(0,4)) * 12 + (+ys.slice(5,7) - 1);
+    var hiV = (+ye.slice(0,4)) * 12 + (+ye.slice(5,7) - 1);
+    var cur = y * 12 + m, hd = dcalW.querySelector('.hd');
+    hd.children[0].disabled = (cur <= loV);
+    hd.children[2].disabled = (cur >= hiV);
+    dcalW.querySelector('.m').textContent = '\u5171 ' + DAY_ORDER.length + ' \u5929';
+  }
+  function dcalOpen(){
+    dcalBuild(+_selDate.slice(0,4), (+_selDate.slice(5,7)) - 1);
+    dcalW.classList.add('on');
+  }
+  pick.addEventListener('click', dcalOpen);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') dcalClose(); });
+  updateBar();
+})();
+
+  (function(){
+    var sheet = document.getElementById('panel');
+    if(!sheet) return;
+    /* 三档：默认 30dvh / 中档 42dvh / 最高 92dvh */
+    var STOPS = [0.30, 0.38, 0.92];   /* 中档：圆盘完整可见 + 底部择时卡露出小半（用户定的「刚刚好」） */
+    var drag = false, y0 = 0, h0 = 0, dy = 0, idx0 = 0;
+    function vh(){ return window.innerHeight; }
+    /* 抽屉不许长到日期栏底下 —— 92dvh 在 844 高的屏上顶部落在 68px，而日期栏有 92px 高：
+       把手连同抽屉最上面那 24px 会被日期栏整个盖住，用户既看不见把手、也没地方点返回
+       （2026-09-15 实机截图确认：把手的命中测试返回的是日期栏的 dbHint）。
+       --barh = 日期栏高 + 12px 余量，由 pubBarh() 实测写入；CSS 里也有同样的兜底（104px）。 */
+    function barhPx(){ var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--barh')); return (v > 0) ? v : 112; }
+    /* 顶上再留一条缝（TOPGAP）：最高档不许顶死到日期栏下沿。
+       顶死时整屏被抽屉占满，用户看不到「这层是浮在页面上的」，心理上会觉得没地方退回去
+       （2026-09-15 实机反馈「过于高、不知道返回」）。留出 ~52px 的页面可见带，
+       既露着日期栏，也露着页面标题那一行，一眼就知道上面还有东西。 */
+    var TOPGAP = 52;
+    function maxH(){ return Math.max(180, vh() - barhPx() - TOPGAP); }
+    function stopH(i){ return Math.min(vh() * STOPS[i], maxH()); }
+    function pubBarh(){
+      var b = document.getElementById('daybar');
+      if(!b) return;
+      /* 只留 4px 缝隙：贴到日期栏下沿，既保证把手露出来，又不会在顶上漏一条被切半的页面文字。 */
+      var v = Math.round(b.offsetHeight || 92) + 4;
+      if(v !== barhPx()) document.documentElement.style.setProperty('--barh', v + 'px');
+    }
+    pubBarh();
+    if(window.ResizeObserver){ try { new ResizeObserver(pubBarh).observe(document.getElementById('daybar')); } catch(_e){} }
+    window.addEventListener('resize', pubBarh);
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(pubBarh);
+    function nearestIdx(f){ var b = 0; for(var i = 1; i < STOPS.length; i++) if(Math.abs(STOPS[i]-f) < Math.abs(STOPS[b]-f)) b = i; return b; }
+    /* 当前档位只能从 class 读 —— 高度带 0.18s 过渡，读高度会拿到中间值：快速连点把手时第二次仍读到上一档，档位就跳错（T21 实测抓到）。 */
+    function curStop(){ if(sheet.classList.contains('expanded')) return 2; if(sheet.classList.contains('tall')) return 1; return 0; }
+    function setStop(i){
+      i = Math.max(0, Math.min(STOPS.length - 1, i));
+      sheet.style.removeProperty('height');
+      sheet.classList.toggle('tall', i === 1);
+      sheet.classList.toggle('expanded', i === 2);
+      fitPanel();
+    }
+    function start(e){
+      var t = e.touches ? e.touches[0] : e;
+      drag = true; dy = 0; y0 = t.clientY;
+      /* 起始档位与基准高度都用「该档位的理论高度」而不是测量值：
+         这样即使上一次过渡还没跑完，从手指按下的那一刻起状态就是确定的。 */
+      idx0 = curStop();
+      h0 = stopH(idx0);
+      sheet.style.transition = 'none';
+      if(e.cancelable) e.preventDefault();
+    }
+    function move(e){
+      if(!drag) return;
+      var t = e.touches ? e.touches[0] : e;
+      dy = y0 - t.clientY;
+      sheet.style.height = Math.max(vh() * 0.16, Math.min(maxH(), h0 + dy)) + 'px';
+      if(e.cancelable) e.preventDefault();
+    }
+    function end(){
+      if(!drag) return;
+      drag = false;
+      sheet.style.removeProperty('transition');
+      sheet.style.removeProperty('height');
+      /* 吸附不按「离哪一档最近」，按「往哪个方向拖了多远」——
+         往上带一点就上一档，拖过 1/4 屏高直接上两档；往下对称。
+         手指跟着走，落点跟直觉一致，不用去找中间线。 */
+      if(Math.abs(dy) < 12){ setStop((idx0 + 1) % STOPS.length); return; }
+      var steps = Math.abs(dy) > vh() * 0.25 ? 2 : 1;
+      setStop(idx0 + (dy > 0 ? steps : -steps));
+    }
+    function inHandle(e){
+      /* 「收起」按钮不归拖拽管 —— 否则轻点会先被判成「轻点把手 → 切档」，跟按钮的点击打架 */
+      if(e.target.closest && e.target.closest('.sheetclose')) return false;
+      if(e.target.closest && e.target.closest('.grab')) return true;
+      /* 抽屉顶上 60px 也算把手区 —— 那根小横条只有 4px 高，不好按 */
+      var r = sheet.getBoundingClientRect();
+      var y = e.touches ? e.touches[0].clientY : e.clientY;
+      return y >= r.top - 8 && y <= r.top + 60;
+    }
+    /* 「收起」：一步回到盘面总纲 + 收回到默认档。
+       用户实测反馈「点开之后不知道怎么返回去」—— 光靠把手不够，得有个写着字的出口。 */
+    sheet.addEventListener('click', function(e){
+      if(e.target && e.target.closest && e.target.closest('.sheetclose')){ showHub(); setStop(0); }
+    });
+    sheet.addEventListener('touchstart', function(e){ if(inHandle(e)) start(e); }, { passive:false });
+    document.addEventListener('touchmove', move, { passive:false });
+    document.addEventListener('touchend', end);
+    sheet.addEventListener('mousedown', function(e){ if(inHandle(e)) start(e); });
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', end);
+
+    /* ---------- 手机返回键：先收抽屉，再按一次才离开 ----------
+       用户要求（2026-09-15）：「按返回，先收起抽屉，再按一次才离开」。
+       做法：抽屉展开时塞一条历史记录；popstate 里如果抽屉还开着，就只收起、不放行。
+       收起时用 history.back() 把那条记录吃掉 —— 否则会留下一次「按了没反应」的空返回。
+
+       两个前提都实测过（file:// 也是）：
+       ① history.pushState 在 file:// 下可用、back() 会触发 popstate、URL 不变；
+       ② 万一 pushState 被拒，立刻把 hOpen 置回 false 并放弃这套逻辑 ——
+          **绝不能出现「没推记录却去 back()」**，那会把用户直接带离页面。
+       桌面端从不加 .tall/.expanded，整段不会介入。 */
+    var hOpen = false, hSuppress = false;
+    function sheetIsOpen(){ return !!(sheet.classList.contains('tall') || sheet.classList.contains('expanded')); }
+    function syncHist(){
+      if(window.innerWidth > 860) return;
+      var open = sheetIsOpen();
+      if(open === hOpen) return;
+      if(open){
+        try { history.pushState({ sheet: 1 }, ''); hOpen = true; } catch(_e){ hOpen = false; }
+      } else {
+        hOpen = false; hSuppress = true;
+        try { history.back(); } catch(_e){ hSuppress = false; }
+      }
+    }
+    window.addEventListener('popstate', function(){
+      if(hSuppress){ hSuppress = false; return; }      /* 这是我们自己 back() 出来的回声，忽略 */
+      if(hOpen){
+        hOpen = false;
+        try { showHub(); setStop(0); } catch(_e){}
+      }
+      /* 抽屉本来就关着 → 什么都不做，交还给浏览器：正常离开页面 */
+    });
+    /* 档位变化的路径有好几条（轻点把手 / 拖拽 / 收起按钮 / 点同一格回圆心 / 模板自己加 .tall），
+       盯 class 最省事：谁改都躲不过，也不用在每个调用点上重复写一遍。 */
+    if(window.MutationObserver){
+      new MutationObserver(syncHist).observe(sheet, { attributes: true, attributeFilter: ['class'] });
+    }
+    /* 给回归测试留个只读探针：直接问「现在这条历史记录推没推」，
+       比「按两下看页面还在不在」确定得多。 */
+    window.__sheetHist = function(){ return { open: hOpen, suppress: hSuppress }; };
+  })();
+
+renderAll();
+var TOUCH = false;
+window.addEventListener("touchstart", function(){ TOUCH = true; }, { passive: true, capture: true });
+function renderAll(){ renderHeader(); renderDirRing(); renderHourRing(); renderNowMark(); renderHalo(); renderTaskGrid(); bindSectors(); }
+(function(){ var _lf = 0; function _tk(){ requestAnimationFrame(_tk); var _t = Date.now(); if (_t - _lf < 100) return; _lf = _t; try { renderNowMark(); } catch(e){} } _tk(); })();
+applyProfile();
+window.addEventListener('resize', function(){
+  var now = window.innerWidth <= 860;
+  if(now !== narrow) applyProfile();
+});
+
+/* 给无头冒烟测试留的探针（只读，无副作用） */
+window.__hubLayout = hubLayout;
+window.__dayCount = DAY_ORDER.length;
+window.__halo = HALO;
+window.__dayOrder = DAY_ORDER;
+})();
+</script>
+<script>(function(){
+  var b = document.getElementById("help"), box = document.getElementById("helpbox");
+  if(!b || !box) return;
+  function openBox(){ box.removeAttribute("hidden"); }
+  function closeBox(){ box.setAttribute("hidden", ""); }
+  b.addEventListener("click", function(e){ if(e.stopPropagation) e.stopPropagation(); openBox(); });
+  box.addEventListener("click", function(e){ if(e.target === box) closeBox(); });
+  var c = document.getElementById("helpClose"); if(c) c.addEventListener("click", closeBox);
+  document.addEventListener("keydown", function(e){ var k = e.key || "", d = e.keyCode;
+    if(k === "Escape" || d === 27) closeBox(); });
+})();
+</script>
+</body>
+</html>
